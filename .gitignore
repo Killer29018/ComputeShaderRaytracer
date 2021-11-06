@@ -1,0 +1,5 @@
+**.bat
+bin/**
+build/**
+.vscode/**
+dlls/**
