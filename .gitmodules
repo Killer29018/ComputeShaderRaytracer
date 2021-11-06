@@ -1,13 +1,13 @@
 [submodule "vendor/glfw"]
 	path = vendor/glfw
-	url = https://github.com/glfw/glfw
+	url = https://github.com/glfw/glfw.git
 [submodule "vendor/glad"]
 	path = vendor/glad
-	url = https://github.com/Dav1dde/glad
+	url = https://github.com/Dav1dde/glad.git
 	branch = glad2
 [submodule "vendor/glm"]
 	path = vendor/glm
-	url = https://github.com/g-truc/glm
+	url = https://github.com/g-truc/glm.git
 [submodule "vendor/KRE"]
 	path = vendor/KRE
-	url = https://github.com/killer29018/KillerRenderEngine
+	url = https://github.com/killer29018/KillerRenderEngine.git
