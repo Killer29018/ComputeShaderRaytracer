@@ -7,11 +7,14 @@
 #include <iostream>
 #include <string>
 
-const unsigned int SCREEN_WIDTH = 800;
-const unsigned int SCREEN_HEIGHT = 600;
+static const float ASPECT_RATIO = 16.0/9.0;
+static const unsigned int SCREEN_WIDTH = 1280;
+static const unsigned int SCREEN_HEIGHT = SCREEN_WIDTH / ASPECT_RATIO;
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void processKeys();
+
+void createTexture(unsigned int& id, int width, int height);
 
 int main()
 {
@@ -54,10 +57,10 @@ int main()
 
     KRE::Vertices vertices({
         // Position
-        -1.0f, -1.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, 1.0f, 0.0f,
-        -1.0f,  1.0f, 0.0f, 1.0f,
-         1.0f,  1.0f, 1.0f, 1.0f
+         1.0f,  1.0f, 0.0f, 0.0f,
+        -1.0f,  1.0f, 1.0f, 0.0f,
+         1.0f, -1.0f, 0.0f, 1.0f,
+        -1.0f, -1.0f, 1.0f, 1.0f
     });
 
     KRE::Indices indices({
@@ -86,24 +89,60 @@ int main()
     KRE::Shader shader;
     shader.compilePath("res/shaders/basicVertexShader.glsl", "res/shaders/basicFragmentShader.glsl");
 
-    float deltaTime = 0.0f;
-    float lastTime = 0.0f;
+    unsigned int texture;
+    unsigned int textureWidth = SCREEN_WIDTH;
+    unsigned int textureHeight = SCREEN_HEIGHT;
+    createTexture(texture, textureWidth, textureHeight);
+
+    KRE::CameraPerspective perspective = KRE::CameraPerspective::ORTHOGRAPHIC;
+    KRE::CameraMovementTypes movement = KRE::CameraMovementTypes::LOCKED_PERSPECTIVE;
+    KRE::Camera camera(glm::vec2(SCREEN_WIDTH, SCREEN_HEIGHT), perspective, movement, glm::vec3(0.0f, 0.0f, 0.0f));
+
+    std::cout << "sX: " << SCREEN_WIDTH << " sY: " << SCREEN_HEIGHT << "\n";
+    std::cout << "Aspect Ratio: " << ASPECT_RATIO << "\n";
+
+    KRE::ComputeShader computeShader;
+    computeShader.compilePath("res/shaders/BasicCompute.glsl");
+    computeShader.bind();
+    int location = glGetUniformLocation(computeShader.ID, "u_ViewportWidth");
+    glUniform1i(location, SCREEN_WIDTH);
+    // glUniform1i(glGetUniformLocation(ID, name), value);
+    // computeShader.setUniformInt("u_ViewportWidth", SCREEN_WIDTH);
+    computeShader.setUniformInt("u_ViewportHeight", SCREEN_HEIGHT);
+
+    computeShader.setUniformInt("u_TargetWidth", 5);
+    computeShader.setUniformFloat("u_AspectRatio", ASPECT_RATIO);
+
+    shader.bind();
+    shader.setUniformInt("u_Texture", 0);
 
     while (!glfwWindowShouldClose(window))
     {
-        glfwPollEvents();
-
         KRE::Clock::tick();
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        {
+            int localWorkGroupSize = 16;
+            computeShader.bind();
+            glDispatchCompute(textureWidth / localWorkGroupSize, textureHeight / localWorkGroupSize, 1);
+        }
 
-        shader.bind();
-        VAO.bind();
-        glDrawElements(GL_TRIANGLES, indices.getCount(), GL_UNSIGNED_INT, NULL);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-        processKeys();
+        {
+            glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, texture);
+
+            VAO.bind();
+            shader.bind();
+
+            glDrawElements(GL_TRIANGLES, indices.getCount(), GL_UNSIGNED_INT, NULL);
+        }
+
         glfwSwapBuffers(window);
+        glfwPollEvents();
     }
 
     glfwTerminate();
@@ -126,4 +165,18 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     case GLFW_PRESS: KRE::Keyboard::pressKey(key); break;
     case GLFW_RELEASE: KRE::Keyboard::unpressKey(key); break;
     }
+}
+
+void createTexture(unsigned int& id, int width, int height)
+{
+    glGenTextures(1, &id);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+    glBindImageTexture(0, id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 }
