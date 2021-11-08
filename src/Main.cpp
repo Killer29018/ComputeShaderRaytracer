@@ -16,6 +16,13 @@ void processKeys();
 
 void createTexture(unsigned int& id, int width, int height);
 
+struct shapeData
+{
+    glm::vec3 position;
+    glm::vec3 size;
+    float materialIndex;
+};
+
 int main()
 {
     if (!glfwInit())
@@ -101,6 +108,34 @@ int main()
     std::cout << "sX: " << SCREEN_WIDTH << " sY: " << SCREEN_HEIGHT << "\n";
     std::cout << "Aspect Ratio: " << ASPECT_RATIO << "\n";
 
+    glm::vec4 data[] = {
+        // Header
+            // Shapes, Data, Material
+        glm::vec4(3.0, 3.0, 2.0, 0.0),
+        // Shapes
+            // [i] shape_type | shape_data_offset | material_data_offset
+        glm::vec4(0.0, 0.0, 0.0, 0.0),
+        glm::vec4(0.0, 1.0, 1.0, 0.0),
+        glm::vec4(0.0, 2.0, 1.0, 0.0),
+        // Shape Data
+            // Circle
+                // [x, y, z], r
+        glm::vec4(0.0, 0.0, -10.0, 0.5),
+        glm::vec4(2.0, 0.0, -10.0, 0.5),
+        glm::vec4(-2.0, 0.0, -10.0, 1.0),
+        // Material Data
+            // [r, g, b] Material Type
+        glm::vec4(1.0, 0.0, 0.0, 0.0),
+        glm::vec4(0.0, 1.0, 0.0, 0.0)
+    };
+
+    unsigned int sceneData;
+    glGenBuffers(1, &sceneData);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, sceneData);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(data), data, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, sceneData);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
     KRE::ComputeShader computeShader;
     computeShader.compilePath("res/shaders/BasicCompute.glsl");
     computeShader.bind();
@@ -122,6 +157,7 @@ int main()
 
         {
             int localWorkGroupSize = 16;
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, sceneData);
             computeShader.bind();
             glDispatchCompute(textureWidth / localWorkGroupSize, textureHeight / localWorkGroupSize, 1);
         }
