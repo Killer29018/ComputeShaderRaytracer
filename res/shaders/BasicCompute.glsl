@@ -3,19 +3,26 @@
 layout (local_size_x = 16, local_size_y = 16) in;
 layout (rgba32f, binding = 0) uniform image2D imgOutput;
 
-layout (std430, binding = 1) buffer SceneData
+layout (std430, binding = 1) buffer SSBO_Data
 {
     vec4 ssbo_SceneData[];
 };
 
-uniform int u_ViewportWidth;
-uniform int u_ViewportHeight;
+layout (std430, binding = 2) buffer SSBO_Camera
+{
+    vec3 ssbo_CameraPos;
+    vec3 ssbo_CameraLookAt;
+    vec3 ssbo_CameraUp;
+    float ssbo_CameraFocusDist;
+    float ssbo_CameraFOV;
+};
 
-uniform int u_TargetWidth;
+uniform int u_ImageWidth;
+uniform int u_ImageHeight;
+
+uniform float u_ViewportWidth;
+uniform float u_ViewportHeight;
 uniform float u_AspectRatio;
-
-uniform vec3 u_CameraPos;
-uniform vec3 u_CameraLookAt;
 
 struct Ray
 {
@@ -23,13 +30,18 @@ struct Ray
     vec3 direction;
 };
 
-struct hitRecord
+struct HitRecord
 {
     float t;
     vec3 colour;
 };
 
-bool sphereHit(Ray ray, vec3 sphereCenter, float sphereRadius, float tMin, float tMax, vec3 colour, inout hitRecord rec)
+vec3 rayAt(in Ray r, in float t)
+{
+    return r.origin + (t * r.direction);
+}
+
+bool sphereHit(Ray ray, vec3 sphereCenter, float sphereRadius, float tMin, float tMax, vec3 colour, inout HitRecord rec)
 {
     vec3 AC = ray.origin - sphereCenter;
     float a = dot(ray.direction, ray.direction);
@@ -61,42 +73,47 @@ void main()
     ivec2 invocation = ivec2(gl_LocalInvocationID.xy);
     ivec2 workGroupSize = ivec2(gl_WorkGroupSize.xy);
 
-    float maxX = u_TargetWidth;
-    float maxY = maxX / u_AspectRatio;
-
     ivec2 dims = imageSize(imgOutput);
 
-    float x = float(pixelCoords.x * 2 - dims.x) / dims.x;
-    float y = float(pixelCoords.y * 2 - dims.y) / dims.y;
+    // Shader Viewport X, Y
+    float x = (float(pixelCoords.x) / (dims.x));
+    float y = (float(pixelCoords.y) / (dims.y));
 
-    // Shapes, Shape data, Material
+    // Shapes, Shape data, Material Data
     const ivec4 header = ivec4(ssbo_SceneData[0]);
 
     const int shapeDataOffset = header.x + 1;
     const int shapeMaterialOffset = header.x + header.y + 1;
 
-    Ray ray;
-    ray.origin = vec3(x * maxX, y * maxY, 0.0);
-    ray.direction = vec3(0.0, 0.0, -1.0);
+    vec3 horizontal = vec3(u_ViewportWidth, 0, 0);
+    vec3 vertical = vec3(0.0, u_ViewportHeight, 0);
+    vec3 lowerLeftCorner = ssbo_CameraPos - (horizontal/2.0) - (vertical/2.0) - vec3(0, 0, 1.0);
 
-    vec3 sphereCenter = vec3(0.0, 0.0, -10.0);
-    float sphereRadius = 0.5;
+    Ray ray;
+    // ray.origin = ssbo_CameraPos + vec3(x * shaderViewportX, y * shaderViewportY, 0.0);
+    ray.origin = ssbo_CameraPos;
+
+    // ray.origin = vec3(x * maxX, y * maxY, 0.0);
+    ray.direction = lowerLeftCorner + (x*horizontal) + (y*vertical) - ssbo_CameraPos;
 
     vec3 unitDirection = normalize(ray.direction);
     float t = 0.5 * (unitDirection.y + 1.0);
     vec3 pixelColour = (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
 
-    hitRecord rec;
+    // pixelColour = vec3(t, 0, 0);
+    // pixelColour = vec3(ssbo_CameraUp);
+
+    HitRecord rec;
     rec.colour = pixelColour;
     float minT = 0.001;
     float maxT = 10000;
     for (int i = 1; i < header.x + 1; i++)
     {
-        hitRecord tempRec;
+        HitRecord tempRec;
 
         bool hit = false;
         ivec4 shape = ivec4(ssbo_SceneData[i]);
-        if (shape.x == 0)
+        if (shape.x == 0) // Circle
         {
             vec3 centre = ssbo_SceneData[shapeDataOffset + shape.y].xyz;
             float radius = ssbo_SceneData[shapeDataOffset + shape.y].w;
@@ -104,10 +121,14 @@ void main()
 
             hit = sphereHit(ray, centre, radius, minT, maxT, colour, tempRec);
         }
-        // bool hit = sphereHit(ray, ssbo_SceneData[i].xyz, ssbo_SceneData[i].w, minT, maxT, vec3(1.0, 0.0, 0.0), tempRec);
+
         if (hit)
         {
             maxT = tempRec.t;
+
+            vec3 N = normalize(rayAt(ray, tempRec.t) - vec3(0, 0, -1));
+            tempRec.colour = 0.5 * vec3(N.x + 1, N.y + 1, N.z + 1);
+
             rec = tempRec;
         }
     }
