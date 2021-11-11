@@ -9,7 +9,7 @@
 
 // static const float ASPECT_RATIO = 16.0/9.0;
 static const float ASPECT_RATIO = 16.0/9.0;
-static const unsigned int SCREEN_WIDTH = 1280;
+static const unsigned int SCREEN_WIDTH = 720;
 static const unsigned int SCREEN_HEIGHT = SCREEN_WIDTH / ASPECT_RATIO;
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -26,6 +26,8 @@ struct ConstantData
     float cameraFocusDist;
     float cameraFov;
     unsigned int imageSampling;
+    unsigned int maxDepth;
+    float aspectRatio;
 };
 
 int main()
@@ -120,23 +122,26 @@ int main()
     glm::vec4 sceneData[] = {
         // Header
             // Shapes, Data, Material
-        glm::vec4(3.0, 3.0, 3.0, 0.0),
+        glm::vec4(4.0, 4.0, 4.0, 0.0),
         // Shapes
             // [i] shape_type | shape_data_offset | material_data_offset
         glm::vec4(0.0, 0.0, 0.0, 0.0),
         glm::vec4(0.0, 1.0, 1.0, 0.0),
         glm::vec4(0.0, 2.0, 2.0, 0.0),
+        glm::vec4(0.0, 3.0, 3.0, 0.0),
         // Shape Data
             // Circle
                 // [x, y, z], r
         glm::vec4(0.0, 0.0, -1.0, 0.5),
         glm::vec4(1.0, 0.0, -1.0, 0.5),
         glm::vec4(-1.0, 0.0, -1.0, 0.5),
+        glm::vec4(0.0, -100.5, 0.0, 100),
         // Material Data
             // [r, g, b] Material Type
         glm::vec4(1.0, 0.0, 0.0, 0.0),
-        glm::vec4(0.0, 1.0, 0.0, 1.0),
-        glm::vec4(0.0, 1.0, 1.0, 1.0),
+        glm::vec4(0.0, 1.0, 0.0, 0.0),
+        glm::vec4(0.0, 1.0, 1.0, 0.0),
+        glm::vec4(1.0, 1.0, 1.0, 0.0),
     };
 
     // glm::vec4 sceneData[] = {
@@ -160,6 +165,9 @@ int main()
     camera.front = glm::vec3(0, 0, -1.0);
     glm::vec3 cameraLookAt = camera.position + camera.front;
 
+    const float viewportHeight = 9;
+    const float viewportWidth = viewportHeight * ASPECT_RATIO;
+
     ConstantData data;
     data.cameraPos = camera.position;
     data.cameraLookAt = cameraLookAt;
@@ -167,19 +175,15 @@ int main()
     data.cameraViewDist = 1.0f;
     data.cameraFocusDist = 1.0f;
     data.cameraFov = 20.0f;
-    data.imageSampling = 100;
+    data.imageSampling = 1;
+    data.maxDepth = 5;
+    data.aspectRatio = ASPECT_RATIO;
 
     KRE::ComputeShader computeShader;
     computeShader.compilePath("res/shaders/BasicCompute.glsl");
     computeShader.bind();
 
     // const float viewportHeight = textureHeight;
-    const float viewportHeight = 9;
-    const float viewportWidth = viewportHeight * ASPECT_RATIO;
-
-    computeShader.setUniformFloat("u_ViewportWidth", viewportWidth);
-    computeShader.setUniformFloat("u_ViewportHeight", viewportHeight);
-    computeShader.setUniformFloat("u_AspectRatio", ASPECT_RATIO);
 
     unsigned int sceneSSBO;
     glGenBuffers(1, &sceneSSBO);

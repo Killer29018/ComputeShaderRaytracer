@@ -17,14 +17,9 @@ layout (std430, binding = 2) buffer SSBO_Data
     float ssbo_CameraFocusDist;
     float ssbo_CameraFOV;
     uint ssbo_Sampling;
+    uint ssbo_MaxDepth;
+    float ssbo_AspectRatio;
 };
-
-const int maxInt = 2147483647;
-const int minInt = -2147483648;
-
-uniform float u_ViewportWidth;
-uniform float u_ViewportHeight;
-uniform float u_AspectRatio;
 
 struct Ray
 {
@@ -34,8 +29,10 @@ struct Ray
 
 struct HitRecord
 {
+    vec3 point;
+    vec3 normal;
+    bool frontFace;
     float t;
-    vec3 colour;
 };
 
 ivec4 header;
@@ -47,13 +44,18 @@ vec3 vertical;
 uint seed;
 
 vec3 getPixelColour(in float minT, in float maxT);
+bool worldHit(in Ray r, in float minT, in float maxT, inout HitRecord rec);
+
+void setFrontFace(inout HitRecord rec, in Ray ray, in vec3 normal);
+vec3 rayAt(in Ray r, in float t);
+void getRayDir(inout Ray r, float x, float y);
+bool sphereHit(in Ray ray, in vec3 sphereCenter, in float sphereRadius, in float tMin, in float tMax, inout HitRecord rec);
 
 uint hash(uint key);
 float rand(inout uint seed);
-
-vec3 rayAt(in Ray r, in float t);
-void getRayDir(inout Ray r, float x, float y);
-bool sphereHit(in Ray ray, in vec3 sphereCenter, in float sphereRadius, in float tMin, in float tMax, in vec3 colour, inout HitRecord rec);
+vec2 randVec2(inout uint seed);
+vec3 randVec3(inout uint seed);
+vec3 randInUnitSphere(inout uint seed);
 
 void main()
 {
@@ -79,15 +81,22 @@ void main()
     // Camera
     float aspectRatio = 16.0/9.0;
     float viewportHeight = 2.0;
-    float viewportWidth = aspectRatio * viewportHeight;
+    float viewportWidth = ssbo_AspectRatio * viewportHeight;
 
     horizontal = vec3(viewportWidth, 0, 0);
     vertical = vec3(0.0, viewportHeight, 0);
     lowerLeftCorner = ssbo_CameraPos - (horizontal/2.0) - (vertical/2.0) - vec3(0, 0, 1.0);
 
-    vec3 finalColour = getPixelColour(0.0001, 10000);
+    float infinite = 1.0/0.0;
+    vec3 finalColour = getPixelColour(0.0001, infinite);
 
-    finalColour *= (1.0 / float(ssbo_Sampling));
+    // finalColour = sqrt((1.0 / float(ssbo_Sampling)) * finalColour)
+    float gamma = 1.0 / float(ssbo_Sampling);
+    finalColour.r = sqrt(gamma * finalColour.r);
+    finalColour.g = sqrt(gamma * finalColour.g);
+    finalColour.b = sqrt(gamma * finalColour.b);
+
+    // finalColour *= (1.0 / float(ssbo_Sampling));
 
     vec4 pixel = vec4(finalColour, 1.0);
     //     float x = (float(pixelCoords.x) + (rand(seed) / 2.0)) / float(dims.x);
@@ -110,62 +119,124 @@ vec3 getPixelColour(in float minT, in float maxT)
 
     for (int s = 0; s < ssbo_Sampling; s++)
     {
-        float highestT = maxT;
+        uint depth = ssbo_MaxDepth;
+        Ray currentRay;
+        currentRay.origin = ray.origin;
+
         float x = (float(pixelCoords.x) + (rand(seed) / 2.0)) / float(dims.x);
         float y = (float(pixelCoords.y) + (rand(seed) / 2.0)) / float(dims.y);
-        // float x = (float(pixelCoords.x) + offsetX) / float(dims.x - 1);
-        // float y = (float(pixelCoords.y) + offsetY) / float(dims.y - 1);
 
-        getRayDir(ray, x, y);
+        // currentRay = ray;
+        getRayDir(currentRay, x, y);
 
-        rec.colour = vec3(0.0);
-
-        bool hitAnything = false;
-
-        for (int i = 1; i < header.x + 1; i++)
+        vec3 colour = vec3(1.0);
+        while (true)
         {
+            if (depth <= 0)
+            {
+               colour = vec3(0.0);
+               break;
+            }
+
             HitRecord tempRec;
 
-            bool hit = false;
-            ivec4 shape = ivec4(ssbo_SceneData[i]);
-            if (shape.x == 0) // Circle
+            if (worldHit(currentRay, minT, maxT, tempRec))
             {
-                vec3 centre = ssbo_SceneData[shapeDataOffset + shape.y].xyz;
-                float radius = ssbo_SceneData[shapeDataOffset + shape.y].w;
-                vec3 colour = ssbo_SceneData[shapeMaterialOffset + shape.z].xyz;
+                // colour = 0.5 * (tempRec.normal + vec3(1.0));
+                colour *= 0.5;
 
-                hit = sphereHit(ray, centre, radius, minT, maxT, colour, tempRec);
-            }
-
-            if (hit)
-            {
-                if (tempRec.t > highestT)
-                    continue;
-                highestT = tempRec.t;
-
-                if (ssbo_SceneData[shapeMaterialOffset + shape.z].w == 0)
-                {
-                    // Get surface normals of sphere
-                    vec3 N = normalize(rayAt(ray, tempRec.t) - vec3(0, 0, -1));
-                    tempRec.colour = 0.5 * vec3(N.x + 1, N.y + 1, N.z + 1);
-                }
+                vec3 target = tempRec.point + tempRec.normal + randInUnitSphere(seed);
+                currentRay.origin = tempRec.point;
+                currentRay.direction = target - tempRec.point;
 
                 rec = tempRec;
-
-                hitAnything = true;
             }
+            else
+            {
+                float t = (currentRay.direction.y + abs(lowerLeftCorner.y)) / (abs(lowerLeftCorner.y) * 2.0);
+                colour *= (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+
+                break;
+            }
+
+            depth--;
         }
 
-        if (!hitAnything) // Background Colour
-        {
-            float t = (ray.direction.y + abs(lowerLeftCorner.y)) / (abs(lowerLeftCorner.y) * 2.0);
-            rec.colour = (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
-        }
-
-        finalColour += rec.colour;
+        finalColour += colour;
     }
 
     return finalColour;
+}
+
+bool worldHit(in Ray ray, in float minT, in float maxT, inout HitRecord rec)
+{
+    bool hitAnything = false;
+    float closest = maxT;
+
+    for (int i = 1; i < header.x + 1; i++)
+    {
+        bool hit = false;
+        ivec4 shape = ivec4(ssbo_SceneData[i]);
+        if (shape.x == 0) // Circle
+        {
+            vec3 centre = ssbo_SceneData[shapeDataOffset + shape.y].xyz;
+            float radius = ssbo_SceneData[shapeDataOffset + shape.y].w;
+            vec3 colour = ssbo_SceneData[shapeMaterialOffset + shape.z].xyz;
+
+            hit = sphereHit(ray, centre, radius, minT, closest, rec);
+        }
+
+        if (hit)
+        {
+            closest = rec.t;
+            hitAnything = true;
+        }
+    }
+
+    return hitAnything;
+}
+
+void setFrontFace(inout HitRecord rec, in Ray ray, in vec3 normal)
+{
+    rec.frontFace = dot(ray.direction, normal) < 0;
+    rec.normal = rec.frontFace ? normal : -normal;
+}
+
+vec3 rayAt(in Ray r, in float t)
+{
+    return r.origin + (t * r.direction);
+}
+
+void getRayDir(inout Ray ray, float x, float y)
+{
+    ray.direction = lowerLeftCorner + (x*horizontal) + (y*vertical) - ssbo_CameraPos;
+}
+
+bool sphereHit(Ray ray, vec3 sphereCenter, float sphereRadius, float tMin, float tMax, inout HitRecord rec)
+{
+    vec3 AC = ray.origin - sphereCenter;
+    float a = dot(ray.direction, ray.direction);
+    float b = dot(ray.direction, AC);
+    float c = dot(AC, AC) - sphereRadius*sphereRadius;
+
+    float discriminant = b*b - a*c;
+    if (discriminant < 0.0) return false;
+
+    float sqrtD = sqrt(discriminant);
+    float tRoot = (-b - sqrtD) / a;
+    if (tRoot < tMin || tRoot > tMax)
+    {
+        tRoot = (-b + sqrtD) / a;
+        if (tRoot < tMin || tRoot > tMax)
+            return false;
+    }
+
+    rec.t = tRoot;
+    rec.point = rayAt(ray, tRoot);
+    vec3 normal = (rec.point - sphereCenter) / sphereRadius;
+    setFrontFace(rec, ray, normal);
+
+    return true;
 }
 
 uint hash(uint key)
@@ -192,37 +263,20 @@ float rand(inout uint seed)
     return (f / 2.0) - 1.0;
 }
 
-vec3 rayAt(in Ray r, in float t)
+vec2 randVec2(inout uint seed)
 {
-    return r.origin + (t * r.direction);
+    return vec2(rand(seed), rand(seed));
 }
 
-void getRayDir(inout Ray ray, float x, float y)
+vec3 randVec3(inout uint seed)
 {
-    ray.direction = lowerLeftCorner + (x*horizontal) + (y*vertical) - ssbo_CameraPos;
+    return vec3(rand(seed), rand(seed), rand(seed));
 }
 
-bool sphereHit(Ray ray, vec3 sphereCenter, float sphereRadius, float tMin, float tMax, vec3 colour, inout HitRecord rec)
+vec3 randInUnitSphere(inout uint seed)
 {
-    vec3 AC = ray.origin - sphereCenter;
-    float a = dot(ray.direction, ray.direction);
-    float b = dot(ray.direction, AC);
-    float c = dot(AC, AC) - sphereRadius*sphereRadius;
-
-    float discriminant = b*b - a*c;
-    if (discriminant < 0.0) return false;
-
-    float sqrtD = sqrt(discriminant);
-    float tRoot = (-b - sqrtD) / a;
-    if (tRoot < tMin || tRoot > tMax)
-    {
-        tRoot = (-b + sqrtD) / a;
-        if (tRoot < tMin || tRoot > tMax)
-            return false;
-    }
-
-    rec.t = tRoot;
-    rec.colour = colour;
-
-    return true;
+    float x = rand(seed) * 2.0 - 1.0;
+    float y = rand(seed) * 2.0 - 1.0;
+    float z = rand(seed) * 2.0 - 1.0;
+    return normalize(vec3(x, y, z));
 }
