@@ -139,6 +139,22 @@ int main()
         glm::vec4(0.0, 1.0, 1.0, 1.0),
     };
 
+    // glm::vec4 sceneData[] = {
+    //     // Header
+    //         // Shapes, Data, Material
+    //     glm::vec4(1.0, 1.0, 1.0, 0.0),
+    //     // Shapes
+    //         // [i] shape_type | shape_data_offset | material_data_offset
+    //     glm::vec4(0.0, 0.0, 0.0, 0.0),
+    //     // Shape Data
+    //         // Circle
+    //             // [x, y, z], r
+    //     glm::vec4(0.0, 0.0, -1.0, 0.5),
+    //     // Material Data
+    //         // [r, g, b] Material Type
+    //     glm::vec4(1.0, 0.0, 0.0, 1.0),
+    // };
+
     camera.position = glm::vec3(0.0f, 0.0f, 0.0f);
 
     camera.front = glm::vec3(0, 0, -1.0);
