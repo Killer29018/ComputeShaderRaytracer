@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 
+// static const float ASPECT_RATIO = 16.0/9.0;
 static const float ASPECT_RATIO = 16.0/9.0;
 static const unsigned int SCREEN_WIDTH = 1280;
 static const unsigned int SCREEN_HEIGHT = SCREEN_WIDTH / ASPECT_RATIO;
@@ -16,20 +17,15 @@ void processKeys();
 
 void createTexture(unsigned int& id, int width, int height);
 
-struct ShapeData
+struct ConstantData
 {
-    glm::vec3 position;
-    glm::vec3 size;
-    float materialIndex;
-};
-
-struct CameraData
-{
-    float cameraPos[3];
-    float cameraLookAt[3];
-    float cameraUp[3];
+    alignas(16) glm::vec3 cameraPos;
+    alignas(16) glm::vec3 cameraLookAt;
+    alignas(16) glm::vec3 cameraUp;
+    float cameraViewDist;
     float cameraFocusDist;
     float cameraFov;
+    unsigned int imageSampling;
 };
 
 int main()
@@ -73,10 +69,10 @@ int main()
 
     KRE::Vertices vertices({
         // Position
-        -1.0f, -1.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, 1.0f, 0.0f,
+         1.0f,  1.0f, 1.0f, 1.0f,
         -1.0f,  1.0f, 0.0f, 1.0f,
-         1.0f,  1.0f, 1.0f, 1.0f
+         1.0f, -1.0f, 1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f, 0.0f
     });
 
     KRE::Indices indices({
@@ -106,10 +102,10 @@ int main()
     shader.compilePath("res/shaders/basicVertexShader.glsl", "res/shaders/basicFragmentShader.glsl");
 
     unsigned int texture;
-    // unsigned int textureWidth = SCREEN_WIDTH;
-    // unsigned int textureHeight = SCREEN_HEIGHT;
-    unsigned int textureWidth = 400;
-    unsigned int textureHeight = 225;
+    unsigned int textureWidth = SCREEN_WIDTH;
+    unsigned int textureHeight = SCREEN_HEIGHT;
+    // unsigned int textureWidth = 400;
+    // unsigned int textureHeight = textureWidth / ASPECT_RATIO;
     createTexture(texture, textureWidth, textureHeight);
 
     KRE::CameraPerspective perspective = KRE::CameraPerspective::ORTHOGRAPHIC;
@@ -119,49 +115,50 @@ int main()
     std::cout << "sX: " << SCREEN_WIDTH << " sY: " << SCREEN_HEIGHT << "\n";
     std::cout << "Aspect Ratio: " << ASPECT_RATIO << "\n";
 
+    float R = cos(glm::pi<float>() / 4.0f);
+
     glm::vec4 sceneData[] = {
         // Header
             // Shapes, Data, Material
-        glm::vec4(2.0, 2.0, 2.0, 0.0),
+        glm::vec4(3.0, 3.0, 3.0, 0.0),
         // Shapes
             // [i] shape_type | shape_data_offset | material_data_offset
         glm::vec4(0.0, 0.0, 0.0, 0.0),
-        glm::vec4(0.0, 1.0, 2.0, 0.0),
+        glm::vec4(0.0, 1.0, 1.0, 0.0),
+        glm::vec4(0.0, 2.0, 2.0, 0.0),
         // Shape Data
             // Circle
                 // [x, y, z], r
         glm::vec4(0.0, 0.0, -1.0, 0.5),
-        glm::vec4(0.0, -50.5, 0.0, 50),
+        glm::vec4(1.0, 0.0, -1.0, 0.5),
+        glm::vec4(-1.0, 0.0, -1.0, 0.5),
         // Material Data
             // [r, g, b] Material Type
         glm::vec4(1.0, 0.0, 0.0, 0.0),
-        glm::vec4(0.0, 1.0, 0.0, 0.0)
+        glm::vec4(0.0, 1.0, 0.0, 1.0),
+        glm::vec4(0.0, 1.0, 1.0, 1.0),
     };
 
-    float cameraFocusDist = 10.0f;
-    float cameraFOV = camera.zoom;
+    camera.position = glm::vec3(0.0f, 0.0f, 0.0f);
 
-    camera.position = glm::vec3(0.0f, 0.0f, 1.0f);
-
+    camera.front = glm::vec3(0, 0, -1.0);
     glm::vec3 cameraLookAt = camera.position + camera.front;
 
-    CameraData cameraData;
-    memcpy(&cameraData.cameraPos, &camera.position.x, sizeof(float) * 3);
-    memcpy(&cameraData.cameraLookAt, &cameraLookAt.x, sizeof(float) * 3);
-    memcpy(&cameraData.cameraUp, &camera.up.x, sizeof(float) * 3);
-    cameraData.cameraFocusDist = 10.0f;
-    cameraData.cameraFov = camera.zoom;
-
-    std::cout << cameraData.cameraPos[0] << " : " << cameraData.cameraPos[1] << " : " << cameraData.cameraPos[2] << "\n";
+    ConstantData data;
+    data.cameraPos = camera.position;
+    data.cameraLookAt = cameraLookAt;
+    data.cameraUp = camera.up;
+    data.cameraViewDist = 1.0f;
+    data.cameraFocusDist = 1.0f;
+    data.cameraFov = 20.0f;
+    data.imageSampling = 100;
 
     KRE::ComputeShader computeShader;
     computeShader.compilePath("res/shaders/BasicCompute.glsl");
     computeShader.bind();
 
-    computeShader.setUniformInt("u_ImageWidth", SCREEN_WIDTH);
-    computeShader.setUniformInt("u_ImageHeight", SCREEN_HEIGHT);
-
-    const float viewportHeight = 2;
+    // const float viewportHeight = textureHeight;
+    const float viewportHeight = 9;
     const float viewportWidth = viewportHeight * ASPECT_RATIO;
 
     computeShader.setUniformFloat("u_ViewportWidth", viewportWidth);
@@ -174,11 +171,11 @@ int main()
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(sceneData), &sceneData, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, sceneSSBO);
 
-    unsigned int cameraSSBO;
-    glGenBuffers(1, &cameraSSBO);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, cameraSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(cameraData), &cameraData, GL_DYNAMIC_COPY);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, sceneSSBO);
+    unsigned int dataSSBO;
+    glGenBuffers(1, &dataSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, dataSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ConstantData), &data, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, dataSSBO);
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
@@ -193,7 +190,7 @@ int main()
             int localWorkGroupSize = 16;
             // glBindBuffer(GL_SHADER_STORAGE_BUFFER, sceneData);
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, sceneSSBO);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, cameraSSBO);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, dataSSBO);
             computeShader.bind();
             glDispatchCompute(textureWidth / localWorkGroupSize, textureHeight / localWorkGroupSize, 1);
         }
