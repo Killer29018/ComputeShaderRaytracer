@@ -1,5 +1,7 @@
 #version 430
 
+#define PI 3.14159
+
 layout (local_size_x = 16, local_size_y = 16) in;
 layout (rgba32f, binding = 0) uniform image2D imgOutput;
 
@@ -16,6 +18,7 @@ layout (std430, binding = 2) buffer SSBO_Data
     float ssbo_CameraViewDist;
     float ssbo_CameraFocusDist;
     float ssbo_CameraFOV;
+    float ssbo_CameraAperture;
     uint ssbo_Sampling;
     uint ssbo_MaxDepth;
     float ssbo_AspectRatio;
@@ -27,11 +30,19 @@ struct Ray
     vec3 direction;
 };
 
+struct Material
+{
+    vec3 albedo;
+    float extra;
+};
+
 struct HitRecord
 {
     vec3 point;
     vec3 normal;
     bool frontFace;
+    uint matType;
+    Material mat;
     float t;
 };
 
@@ -41,6 +52,8 @@ uint shapeMaterialOffset;
 vec3 lowerLeftCorner;
 vec3 horizontal;
 vec3 vertical;
+vec3 w, u, v;
+float lensRadius;
 uint seed;
 
 vec3 getPixelColour(in float minT, in float maxT);
@@ -48,14 +61,19 @@ bool worldHit(in Ray r, in float minT, in float maxT, inout HitRecord rec);
 
 void setFrontFace(inout HitRecord rec, in Ray ray, in vec3 normal);
 vec3 rayAt(in Ray r, in float t);
-void getRayDir(inout Ray r, float x, float y);
+void getRay(inout Ray r, float x, float y);
 bool sphereHit(in Ray ray, in vec3 sphereCenter, in float sphereRadius, in float tMin, in float tMax, inout HitRecord rec);
+
+bool scatterLambertian(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattereed);
+bool scatterMetal(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattereed);
+bool scatterDielectric(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattered);
 
 uint hash(uint key);
 float rand(inout uint seed);
 vec2 randVec2(inout uint seed);
 vec3 randVec3(inout uint seed);
 vec3 randInUnitSphere(inout uint seed);
+vec3 randInUnitDisc(inout uint seed);
 
 void main()
 {
@@ -67,41 +85,38 @@ void main()
     ivec2 dims = imageSize(imgOutput);
 
     seed = hash(gl_GlobalInvocationID.x) ^ hash(gl_GlobalInvocationID.y * workGroupSize.y);
-    // seed = 1;
 
-    // // Shader Viewport X, Y
-    // float x = (float(pixelCoords.x) / float(dims.x - 1));
-    // float y = (float(pixelCoords.y) / float(dims.y - 1));
-
-    // Shapes, Shape data, Material Data
+    // Shapes, Shape data, Material Data, Material Type
     header = ivec4(ssbo_SceneData[0]);
     shapeDataOffset = header.x + 1;
     shapeMaterialOffset = header.x + header.y + 1;
 
     // Camera
+    float theta = radians(ssbo_CameraFOV);
+    float h = tan(theta/2.0);
     float aspectRatio = 16.0/9.0;
-    float viewportHeight = 2.0;
+    float viewportHeight = 2.0 * h;
     float viewportWidth = ssbo_AspectRatio * viewportHeight;
 
-    horizontal = vec3(viewportWidth, 0, 0);
-    vertical = vec3(0.0, viewportHeight, 0);
-    lowerLeftCorner = ssbo_CameraPos - (horizontal/2.0) - (vertical/2.0) - vec3(0, 0, 1.0);
+    w = normalize(ssbo_CameraPos - ssbo_CameraLookAt);
+    u = normalize(cross(ssbo_CameraUp, w));
+    v = cross(w, u);
+
+    horizontal = ssbo_CameraFocusDist * viewportWidth * u;
+    vertical = ssbo_CameraFocusDist * viewportHeight * v;
+    lowerLeftCorner = ssbo_CameraPos - (horizontal/2.0) - (vertical/2.0) - (ssbo_CameraFocusDist*w);
+
+    lensRadius = ssbo_CameraAperture / 2.0;
 
     float infinite = 1.0/0.0;
     vec3 finalColour = getPixelColour(0.0001, infinite);
 
-    // finalColour = sqrt((1.0 / float(ssbo_Sampling)) * finalColour)
     float gamma = 1.0 / float(ssbo_Sampling);
     finalColour.r = sqrt(gamma * finalColour.r);
     finalColour.g = sqrt(gamma * finalColour.g);
     finalColour.b = sqrt(gamma * finalColour.b);
 
-    // finalColour *= (1.0 / float(ssbo_Sampling));
-
     vec4 pixel = vec4(finalColour, 1.0);
-    //     float x = (float(pixelCoords.x) + (rand(seed) / 2.0)) / float(dims.x);
-    //     float y = (float(pixelCoords.y) + (rand(seed) / 2.0)) / float(dims.y);
-    // pixel = vec4(pixelCoords.x + rand(seed), pixelCoords.y + rand(seed), pixelCoords.x, pixelCoords.y);
 
     imageStore(imgOutput, pixelCoords, pixel);
 }
@@ -109,7 +124,6 @@ void main()
 vec3 getPixelColour(in float minT, in float maxT)
 {
     Ray ray;
-    ray.origin = ssbo_CameraPos;
 
     ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
     ivec2 dims = imageSize(imgOutput);
@@ -121,13 +135,11 @@ vec3 getPixelColour(in float minT, in float maxT)
     {
         uint depth = ssbo_MaxDepth;
         Ray currentRay;
-        currentRay.origin = ray.origin;
 
         float x = (float(pixelCoords.x) + (rand(seed) / 2.0)) / float(dims.x);
         float y = (float(pixelCoords.y) + (rand(seed) / 2.0)) / float(dims.y);
 
-        // currentRay = ray;
-        getRayDir(currentRay, x, y);
+        getRay(currentRay, x, y);
 
         vec3 colour = vec3(1.0);
         while (true)
@@ -142,12 +154,29 @@ vec3 getPixelColour(in float minT, in float maxT)
 
             if (worldHit(currentRay, minT, maxT, tempRec))
             {
-                // colour = 0.5 * (tempRec.normal + vec3(1.0));
-                colour *= 0.5;
+                Ray scattered;
+                vec3 attenuation;
 
-                vec3 target = tempRec.point + tempRec.normal + randInUnitSphere(seed);
-                currentRay.origin = tempRec.point;
-                currentRay.direction = target - tempRec.point;
+                bool hit = false;
+                switch (tempRec.matType)
+                {
+                case 0:
+                    hit = scatterLambertian(currentRay, tempRec, attenuation, scattered);
+                    break;
+                case 1:
+                    hit = scatterMetal(currentRay, tempRec, attenuation, scattered);
+                    break;
+                case 2:
+                    hit = scatterDielectric(currentRay, tempRec, attenuation, scattered);
+                }
+
+                if (hit)
+                {
+                    currentRay = scattered;
+                    colour *= attenuation;
+                }
+                else
+                    colour = vec3(0.0);
 
                 rec = tempRec;
             }
@@ -181,13 +210,22 @@ bool worldHit(in Ray ray, in float minT, in float maxT, inout HitRecord rec)
         {
             vec3 centre = ssbo_SceneData[shapeDataOffset + shape.y].xyz;
             float radius = ssbo_SceneData[shapeDataOffset + shape.y].w;
-            vec3 colour = ssbo_SceneData[shapeMaterialOffset + shape.z].xyz;
 
             hit = sphereHit(ray, centre, radius, minT, closest, rec);
         }
 
         if (hit)
         {
+            vec3 colour = ssbo_SceneData[shapeMaterialOffset + shape.z].xyz;
+            float extra = ssbo_SceneData[shapeMaterialOffset + shape.z].w;
+            float materialType = shape.w;
+
+            Material mat;
+            mat.albedo = colour;
+            mat.extra = extra;
+            rec.mat = mat;
+            rec.matType = uint(materialType);
+
             closest = rec.t;
             hitAnything = true;
         }
@@ -207,9 +245,13 @@ vec3 rayAt(in Ray r, in float t)
     return r.origin + (t * r.direction);
 }
 
-void getRayDir(inout Ray ray, float x, float y)
+void getRay(inout Ray ray, float x, float y)
 {
-    ray.direction = lowerLeftCorner + (x*horizontal) + (y*vertical) - ssbo_CameraPos;
+    vec3 rd = lensRadius * randInUnitDisc(seed);
+    vec3 offset = u*rd.x + v*rd.y;
+
+    ray.origin = ssbo_CameraPos + offset;
+    ray.direction = lowerLeftCorner + (x*horizontal) + (y*vertical) - ssbo_CameraPos - offset;
 }
 
 bool sphereHit(Ray ray, vec3 sphereCenter, float sphereRadius, float tMin, float tMax, inout HitRecord rec)
@@ -236,6 +278,53 @@ bool sphereHit(Ray ray, vec3 sphereCenter, float sphereRadius, float tMin, float
     vec3 normal = (rec.point - sphereCenter) / sphereRadius;
     setFrontFace(rec, ray, normal);
 
+    return true;
+}
+
+bool scatterLambertian(in Ray ray, inout HitRecord rec, out vec3 attenuation, out Ray scattered)
+{
+    vec3 scatterDirection = rec.normal + randVec3(seed);
+    scattered.origin = rec.point;
+    scattered.direction = scatterDirection;
+
+    attenuation = rec.mat.albedo;
+    return true;
+}
+
+bool scatterMetal(in Ray ray, inout HitRecord rec, out vec3 attenuation, out Ray scattered)
+{
+    vec3 reflected = reflect(normalize(ray.direction), rec.normal);
+    scattered.origin = rec.point;
+    scattered.direction = reflected + rec.mat.extra*randInUnitSphere(seed);
+
+    attenuation = rec.mat.albedo;
+    return dot(scattered.direction, rec.normal) > 0;
+}
+
+float reflectance(float cosine, float refIdx)
+{
+    float r0 = (1-refIdx) / (1+refIdx);
+    r0 = r0*r0;
+    return r0 +(1-r0)*pow((1-cosine), 5);
+}
+
+bool scatterDielectric(in Ray ray, inout HitRecord rec, out vec3 attenuation, out Ray scattered)
+{
+    attenuation = vec3(1.0);
+
+    float refractionRatio = rec.frontFace ? (1.0/rec.mat.extra) : rec.mat.extra;
+
+    vec3 unitDirection = normalize(ray.direction);
+    float cosTheta = min(dot(-unitDirection, rec.normal), 1.0);
+    float sinTheta = sqrt(1.0 - cosTheta*cosTheta);
+
+    bool cannotRefract = refractionRatio * sinTheta > 1.0;
+    vec3 direction;
+    if (cannotRefract || reflectance(cosTheta, refractionRatio) > rand(seed)) direction = reflect(unitDirection, rec.normal);
+    else direction = refract(unitDirection, rec.normal, refractionRatio);
+
+    scattered.origin = rec.point;
+    scattered.direction = direction;
     return true;
 }
 
@@ -279,4 +368,12 @@ vec3 randInUnitSphere(inout uint seed)
     float y = rand(seed) * 2.0 - 1.0;
     float z = rand(seed) * 2.0 - 1.0;
     return normalize(vec3(x, y, z));
+}
+
+vec3 randInUnitDisc(inout uint seed)
+{
+    float r = sqrt(rand(seed));
+    float theta = rand(seed) * 2 * PI;
+
+    return vec3(r * cos(theta), r * sin(theta), 0.0);
 }
