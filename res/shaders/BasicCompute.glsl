@@ -49,11 +49,14 @@ struct HitRecord
 ivec4 header;
 uint shapeDataOffset;
 uint shapeMaterialOffset;
+uint shapeExtraOffset;
+
 vec3 lowerLeftCorner;
 vec3 horizontal;
 vec3 vertical;
 vec3 w, u, v;
 float lensRadius;
+
 uint seed;
 
 vec3 getPixelColour(in float minT, in float maxT);
@@ -86,10 +89,11 @@ void main()
 
     seed = hash(gl_GlobalInvocationID.x) ^ hash(gl_GlobalInvocationID.y * workGroupSize.y);
 
-    // Shapes, Shape data, Material Data, Material Type
+    // Shapes, Shape data, Material Data, Extra
     header = ivec4(ssbo_SceneData[0]);
     shapeDataOffset = header.x + 1;
     shapeMaterialOffset = header.x + header.y + 1;
+    shapeExtraOffset = header.x + header.y + header.z + 1;
 
     // Camera
     float theta = radians(ssbo_CameraFOV);
@@ -108,9 +112,11 @@ void main()
 
     lensRadius = ssbo_CameraAperture / 2.0;
 
+    // Get Pixel Colour
     float infinite = 1.0/0.0;
     vec3 finalColour = getPixelColour(0.0001, infinite);
 
+    // Gamma Correction
     float gamma = 1.0 / float(ssbo_Sampling);
     finalColour.r = sqrt(gamma * finalColour.r);
     finalColour.g = sqrt(gamma * finalColour.g);
@@ -118,6 +124,7 @@ void main()
 
     vec4 pixel = vec4(finalColour, 1.0);
 
+    // Store Pixel
     imageStore(imgOutput, pixelCoords, pixel);
 }
 
@@ -168,6 +175,7 @@ vec3 getPixelColour(in float minT, in float maxT)
                     break;
                 case 2:
                     hit = scatterDielectric(currentRay, tempRec, attenuation, scattered);
+                    break;
                 }
 
                 if (hit)
@@ -218,7 +226,7 @@ bool worldHit(in Ray ray, in float minT, in float maxT, inout HitRecord rec)
         {
             vec3 colour = ssbo_SceneData[shapeMaterialOffset + shape.z].xyz;
             float extra = ssbo_SceneData[shapeMaterialOffset + shape.z].w;
-            float materialType = shape.w;
+            float materialType = ssbo_SceneData[shapeExtraOffset + shape.w].x;
 
             Material mat;
             mat.albedo = colour;

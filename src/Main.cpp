@@ -7,7 +7,10 @@
 #include <iostream>
 #include <string>
 
-// static const float ASPECT_RATIO = 16.0/9.0;
+#include <glm/gtx/string_cast.hpp>
+
+#include "Scene.hpp"
+
 static const float ASPECT_RATIO = 16.0/9.0;
 static const unsigned int SCREEN_WIDTH = 1280;
 static const unsigned int SCREEN_HEIGHT = SCREEN_WIDTH / ASPECT_RATIO;
@@ -107,8 +110,6 @@ int main()
     unsigned int texture;
     unsigned int textureWidth = SCREEN_WIDTH;
     unsigned int textureHeight = SCREEN_HEIGHT;
-    // unsigned int textureWidth = 400;
-    // unsigned int textureHeight = textureWidth / ASPECT_RATIO;
     createTexture(texture, textureWidth, textureHeight);
 
     KRE::CameraPerspective perspective = KRE::CameraPerspective::ORTHOGRAPHIC;
@@ -118,58 +119,64 @@ int main()
     std::cout << "sX: " << SCREEN_WIDTH << " sY: " << SCREEN_HEIGHT << "\n";
     std::cout << "Aspect Ratio: " << ASPECT_RATIO << "\n";
 
+    Material matGround = Lambertian(glm::vec3(0.8, 0.8, 0.0));
+    Shape ground = Sphere(glm::vec3(0.0, -100.5, -1.0), 100, matGround);
+
+    Material matCen = Lambertian(glm::vec3(0.1, 0.2, 0.5));
+    Shape center = Sphere(glm::vec3(0.0, 0.0, -1.0), 0.5, matCen);
+
+    Material matLeft = Dielectric(1.5);
+    Shape left1 = Sphere(glm::vec3(-1.0, 0.0, -1.0), 0.5, matLeft);
+    Shape left2 = Sphere(glm::vec3(-1.0, 0.0, -1.0), -0.45, matLeft);
+
+    Material matRight = Metal(glm::vec3(0.8, 0.6, 0.2), 0.0);
+    Shape right = Sphere(glm::vec3(1.0, 0.0, -1.0), 0.5, matRight);
+
+
+    Scene scene;
+    scene.addShape(ground);
+    scene.addShape(center);
+    scene.addShape(left1);
+    scene.addShape(left2);
+    scene.addShape(right);
+
+    std::vector<glm::vec4>& sceneData = scene.getScene();
+
+    for (glm::vec4 v : sceneData)
+    {
+        std::cout << glm::to_string(v) << "\n";
+    }
     // glm::vec4 sceneData[] = {
     //     // Header
     //         // Shapes, Data, Material
-    //     glm::vec4(4.0, 4.0, 4.0, 0.0),
+    //     glm::vec4(5.0, 5.0, 4.0, 3.0),
     //     // Shapes
-    //         // [i] shape_type | shape_data_offset | material_data_offset
+    //         // shape_type | shape_data_offset | material_data_offset | material_type
     //     glm::vec4(0.0, 0.0, 0.0, 0.0),
     //     glm::vec4(0.0, 1.0, 1.0, 0.0),
-    //     glm::vec4(0.0, 2.0, 2.0, 0.0),
-    //     glm::vec4(0.0, 3.0, 3.0, 0.0),
+    //     glm::vec4(0.0, 2.0, 2.0, 2.0),
+    //     glm::vec4(0.0, 3.0, 2.0, 2.0),
+    //     glm::vec4(0.0, 4.0, 3.0, 1.0),
     //     // Shape Data
     //         // Circle
     //             // [x, y, z], r
-    //     glm::vec4(0.0, 0.0, -1.0, 0.5),
-    //     glm::vec4(1.0, 0.0, -1.0, 0.5),
-    //     glm::vec4(-1.0, 0.0, -1.0, 0.5),
-    //     glm::vec4(0.0, -100.5, 0.0, 100),
+    //     glm::vec4( 0.0,  -100.5, -1.0,   100),
+    //     glm::vec4( 0.0,     0.0, -1.0,   0.5),
+    //     glm::vec4(-1.0,     0.0, -1.0,   0.5),
+    //     glm::vec4(-1.0,     0.0, -1.0, -0.45),
+    //     glm::vec4( 1.0,     0.0, -1.0,   0.5),
     //     // Material Data
-    //         // [r, g, b] Material Type
-    //     glm::vec4(1.0, 0.0, 0.0, 1.0),
-    //     glm::vec4(0.0, 1.0, 0.0, 0.0),
-    //     glm::vec4(0.0, 1.0, 1.0, 0.0),
-    //     glm::vec4(1.0, 1.0, 1.0, 0.0),
-    // };
+    //         // [r, g, b] material_extra
+    //     glm::vec4(0.8, 0.8, 0.0, 0.0),
+    //     glm::vec4(0.1, 0.2, 0.5, 0.0),
+    //     glm::vec4(0.0, 0.0, 0.0, 1.5),
+    //     glm::vec4(0.8, 0.6, 0.2, 0.0),
 
-    // float R = cos(glm::pi<float>() / 4.0);
-    glm::vec4 sceneData[] = {
-        // Header
-            // Shapes, Data, Material
-        glm::vec4(5.0, 5.0, 4.0, 0.0),
-        // Shapes
-            // shape_type | shape_data_offset | material_data_offset | material_type
-        glm::vec4(0.0, 0.0, 0.0, 0.0),
-        glm::vec4(0.0, 1.0, 1.0, 0.0),
-        glm::vec4(0.0, 2.0, 2.0, 2.0),
-        glm::vec4(0.0, 3.0, 2.0, 2.0),
-        glm::vec4(0.0, 4.0, 3.0, 1.0),
-        // Shape Data
-            // Circle
-                // [x, y, z], r
-        glm::vec4(0.0, -100.5, -1.0, 100),
-        glm::vec4(0.0, 0.0, -1.0, 0.5),
-        glm::vec4(-1.0, 0.0, -1.0, 0.5),
-        glm::vec4(-1.0, 0.0, -1.0, -0.45),
-        glm::vec4(1.0, 0.0, -1.0, 0.5),
-        // Material Data
-            // [r, g, b] material_extra
-        glm::vec4(0.8, 0.8, 0.0, 0.0),
-        glm::vec4(0.1, 0.2, 0.5, 0.0),
-        glm::vec4(0.0, 0.0, 0.0, 1.5),
-        glm::vec4(0.8, 0.6, 0.2, 0.0),
-    };
+    //     // Extra
+    //     glm::vec4(0, 0, 0, 0),
+    //     glm::vec4(1, 0, 0, 0),
+    //     glm::vec4(2, 0, 0, 0),
+    // };
 
     camera.position = glm::vec3(0.0f, 0.0f, 0.0f);
 
@@ -179,7 +186,7 @@ int main()
     const float viewportHeight = 9;
     const float viewportWidth = viewportHeight * ASPECT_RATIO;
 
-    camera.position = glm::vec3(3, 3, 2);
+    camera.position = glm::vec3(3, 3, 7);
     cameraLookAt = glm::vec3(0, 0, -1);
 
     ConstantData data;
@@ -198,12 +205,12 @@ int main()
     computeShader.compilePath("res/shaders/BasicCompute.glsl");
     computeShader.bind();
 
-    // const float viewportHeight = textureHeight;
+    std::cout << sizeof(glm::vec4) << ": " << sizeof(glm::vec4) * sceneData.size() << "\n";
 
     unsigned int sceneSSBO;
     glGenBuffers(1, &sceneSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, sceneSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(sceneData), &sceneData, GL_DYNAMIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4) * sceneData.size(), sceneData.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, sceneSSBO);
 
     unsigned int dataSSBO;
@@ -223,7 +230,6 @@ int main()
 
         {
             int localWorkGroupSize = 16;
-            // glBindBuffer(GL_SHADER_STORAGE_BUFFER, sceneData);
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, sceneSSBO);
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, dataSSBO);
             computeShader.bind();
