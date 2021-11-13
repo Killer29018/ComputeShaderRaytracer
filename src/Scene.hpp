@@ -22,6 +22,8 @@ struct Material
     glm::vec3 colour;
     float extraInfo;
 
+    Material() {}
+
     Material(MaterialType matType, glm::vec3 colour, float extraInfo)
         : materialType(matType), colour(colour), extraInfo(extraInfo) {}
 };
@@ -47,18 +49,18 @@ struct Dielectric : public Material
 struct Shape
 {
     glm::vec3 position;
-    Material& mat;
+    unsigned int materialIndex;
     ShapeType type;
 
     float radius;
 
-    Shape(glm::vec3 position, Material& mat, ShapeType type)
-        : position(position), mat(mat), type(type) {}
+    Shape(glm::vec3 position, unsigned int mat, ShapeType type)
+        : position(position), materialIndex(mat), type(type) {}
 };
 
 struct Sphere : Shape
 {
-    Sphere(glm::vec3 position, float radius, Material& mat)
+    Sphere(glm::vec3 position, float radius, unsigned int mat)
         : Shape(position, mat, ShapeType::Sphere)
     {
         this->radius = radius;
@@ -70,7 +72,7 @@ class Scene
 public:
 private:
     std::vector<Shape> m_Shapes;
-    std::vector<Material> m_Material;
+    std::vector<Material> m_Materials;
 
     bool m_Updated = false;
     std::vector<glm::vec4> m_Scene;
@@ -86,8 +88,8 @@ public:
     std::vector<glm::vec4>& getScene();
     std::vector<glm::vec4>& createScene();
 
-    void addShape(Shape& shape);
-    void addMaterial(Material& material);
+    void addShape(const Shape& shape);
+    unsigned int addMaterial(const Material& material);
 private:
     void addElementToScene(unsigned int& offset, glm::vec4& value);
 };

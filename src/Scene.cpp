@@ -27,7 +27,7 @@ std::vector<glm::vec4>& Scene::createScene()
     for (int i = 0; i < m_Shapes.size(); i++)
     {
         unsigned int type = (unsigned int)m_Shapes[i].type;
-        value = glm::vec4(type, i, i, i);
+        value = glm::vec4(type, i, m_Shapes[i].materialIndex, i);
         m_Scene.at(shapeOffset + i) = value;
 
         switch (type)
@@ -38,7 +38,7 @@ std::vector<glm::vec4>& Scene::createScene()
             value = glm::vec4(pos.x, pos.y, pos.z, radius);
             m_Scene.at(shapeDataOffset + i) = value;
 
-            unsigned int matType = (unsigned int)m_Shapes[i].mat.materialType;
+            unsigned int matType = (unsigned int)m_Materials[m_Shapes[i].materialIndex].materialType;
             unsigned int extraCount = 0;
 
             value = glm::vec4(matType, extraCount, 0.0, 0.0);
@@ -46,24 +46,26 @@ std::vector<glm::vec4>& Scene::createScene()
 
             break;
         }
+    }
 
-        glm::vec3 colour = m_Shapes[i].mat.colour;
-        float extra = m_Shapes[i].mat.extraInfo;
-
-        value = glm::vec4(colour.r, colour.g, colour.b, extra);
+    for (int i = 0; i < m_Materials.size(); i++)
+    {
+        const Material& m = m_Materials[i];
+        glm::vec3 colour = m.colour;
+        float extra = m.extraInfo;
+        value = glm::vec4(colour.x, colour.y, colour.z, extra);
         m_Scene.at(materialOffset + i) = value;
     }
 
     return m_Scene;
 }
 
-void Scene::addShape(Shape& shape)
+void Scene::addShape(const Shape& shape)
 {
     m_Updated = true;
 
     m_ShapeCount++;
     m_ShapeDataCount++;
-    m_MaterialCount++;
 
     switch (shape.type)
     {
@@ -73,9 +75,14 @@ void Scene::addShape(Shape& shape)
     m_Shapes.push_back(shape);
 }
 
-void Scene::addMaterial(Material& material)
+unsigned int Scene::addMaterial(const Material& material)
 {
-    return;
+    m_Updated = true;
+
+    m_MaterialCount++;
+    m_Materials.push_back(material);
+
+    return m_MaterialCount-1;
 }
 
 void Scene::addElementToScene(unsigned int& offset, glm::vec4& value)
