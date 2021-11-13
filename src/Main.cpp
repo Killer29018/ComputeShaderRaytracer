@@ -12,7 +12,7 @@
 
 #include "Scene.hpp"
 
-static const float ASPECT_RATIO = 3.0/2.0;
+static const float ASPECT_RATIO = 16.0/9.0;
 static const unsigned int SCREEN_WIDTH = 1280;
 static const unsigned int SCREEN_HEIGHT = SCREEN_WIDTH / ASPECT_RATIO;
 
@@ -124,27 +124,27 @@ int main()
     std::cout << "sX: " << SCREEN_WIDTH << " sY: " << SCREEN_HEIGHT << "\n";
     std::cout << "Aspect Ratio: " << ASPECT_RATIO << "\n";
 
-    Scene scene;
-    unsigned int matGround = scene.addMaterial(Lambertian(glm::vec3(0.8, 0.8, 0.0)));
-    Shape ground = Sphere(glm::vec3(0.0, -100.5, -1.0), 100, matGround);
+    // Scene scene;
+    // unsigned int matGround = scene.addMaterial(Lambertian(glm::vec3(0.8, 0.8, 0.0)));
+    // Shape ground = Sphere(glm::vec3(0.0, -100.5, -1.0), 100, matGround);
 
-    unsigned int matCen = scene.addMaterial(Lambertian(glm::vec3(0.1, 0.2, 0.5)));
-    Shape center = Sphere(glm::vec3(0.0, 0.0, -1.0), 0.5, matCen);
+    // unsigned int matCen = scene.addMaterial(Lambertian(glm::vec3(0.1, 0.2, 0.5)));
+    // Shape center = Sphere(glm::vec3(0.0, 0.0, -1.0), 0.5, matCen);
 
-    unsigned int matLeft = scene.addMaterial(Dielectric(1.5));
-    Shape left1 = Sphere(glm::vec3(-1.0, 0.0, -1.0), 0.5, matLeft);
-    Shape left2 = Sphere(glm::vec3(-1.0, 0.0, -1.0), -0.45, matLeft);
+    // unsigned int matLeft = scene.addMaterial(Dielectric(1.5));
+    // Shape left1 = Sphere(glm::vec3(-1.0, 0.0, -1.0), 0.5, matLeft);
+    // Shape left2 = Sphere(glm::vec3(-1.0, 0.0, -1.0), -0.45, matLeft);
 
-    unsigned int matRight = scene.addMaterial(Metal(glm::vec3(0.8, 0.6, 0.2), 0.0));
-    Shape right = Sphere(glm::vec3(1.0, 0.0, -1.0), 0.5, matRight);
+    // unsigned int matRight = scene.addMaterial(Metal(glm::vec3(0.8, 0.6, 0.2), 0.0));
+    // Shape right = Sphere(glm::vec3(1.0, 0.0, -1.0), 0.5, matRight);
 
-    scene.addShape(ground);
-    scene.addShape(center);
-    scene.addShape(left1);
-    scene.addShape(left2);
-    scene.addShape(right);
+    // scene.addShape(ground);
+    // scene.addShape(center);
+    // scene.addShape(left1);
+    // scene.addShape(left2);
+    // scene.addShape(right);
 
-    // Scene scene = createScene();
+    Scene scene = createScene();
     std::vector<glm::vec4>& sceneData = scene.getScene();
 
     for (glm::vec4 value : sceneData)
@@ -169,7 +169,7 @@ int main()
     data.cameraUp = camera.up;
     data.cameraViewDist = 1.0f;
     data.cameraFocusDist = 12.0;
-    data.cameraFov = 10.0f;
+    data.cameraFov = 20.0f;
     data.cameraAperture = 0.1;
     data.imageSampling = 100;
     data.maxDepth = 50;
@@ -276,7 +276,7 @@ Scene createScene()
     unsigned int groundMat = scene.addMaterial(Lambertian(glm::vec3(0.5, 0.5, 0.5)));
     scene.addShape(Sphere(glm::vec3(0, -1000, 0), 1000, groundMat));
 
-    int maxSize = 11;
+    int maxSize = 5;
 
     for (int a = -maxSize; a < maxSize; a++)
     {
