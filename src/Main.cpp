@@ -19,7 +19,8 @@ static const unsigned int SCREEN_HEIGHT = SCREEN_WIDTH / ASPECT_RATIO;
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void processKeys();
 
-void createTexture(unsigned int& id, int width, int height);
+void createTexture(unsigned int& id, int width, int height, int bindPoint);
+Scene createScene();
 
 struct ConstantData
 {
@@ -30,12 +31,10 @@ struct ConstantData
     float cameraFocusDist;
     float cameraFov;
     float cameraAperture;
-    unsigned int imageSampling;
     unsigned int maxDepth;
     float aspectRatio;
 };
 
-Scene createScene();
 
 int main()
 {
@@ -61,7 +60,7 @@ int main()
 
     glfwSetKeyCallback(window, keyCallback);
 
-    glfwSwapInterval(0);
+    glfwSwapInterval(1);
 
     int version = gladLoadGL(glfwGetProcAddress);
     if (version == 0)
@@ -112,10 +111,12 @@ int main()
     KRE::Shader shader;
     shader.compilePath("res/shaders/basicVertexShader.glsl", "res/shaders/basicFragmentShader.glsl");
 
-    unsigned int texture;
+    unsigned int outputImage;
+    unsigned int dataImage;
     unsigned int textureWidth = SCREEN_WIDTH;
     unsigned int textureHeight = SCREEN_HEIGHT;
-    createTexture(texture, textureWidth, textureHeight);
+    createTexture(outputImage, textureWidth, textureHeight, 0);
+    createTexture(dataImage, textureWidth, textureHeight, 1);
 
     KRE::CameraPerspective perspective = KRE::CameraPerspective::ORTHOGRAPHIC;
     KRE::CameraMovementTypes movement = KRE::CameraMovementTypes::LOCKED_PERSPECTIVE;
@@ -124,33 +125,8 @@ int main()
     std::cout << "sX: " << SCREEN_WIDTH << " sY: " << SCREEN_HEIGHT << "\n";
     std::cout << "Aspect Ratio: " << ASPECT_RATIO << "\n";
 
-    // Scene scene;
-    // unsigned int matGround = scene.addMaterial(Lambertian(glm::vec3(0.8, 0.8, 0.0)));
-    // Shape ground = Sphere(glm::vec3(0.0, -100.5, -1.0), 100, matGround);
-
-    // unsigned int matCen = scene.addMaterial(Lambertian(glm::vec3(0.1, 0.2, 0.5)));
-    // Shape center = Sphere(glm::vec3(0.0, 0.0, -1.0), 0.5, matCen);
-
-    // unsigned int matLeft = scene.addMaterial(Dielectric(1.5));
-    // Shape left1 = Sphere(glm::vec3(-1.0, 0.0, -1.0), 0.5, matLeft);
-    // Shape left2 = Sphere(glm::vec3(-1.0, 0.0, -1.0), -0.45, matLeft);
-
-    // unsigned int matRight = scene.addMaterial(Metal(glm::vec3(0.8, 0.6, 0.2), 0.0));
-    // Shape right = Sphere(glm::vec3(1.0, 0.0, -1.0), 0.5, matRight);
-
-    // scene.addShape(ground);
-    // scene.addShape(center);
-    // scene.addShape(left1);
-    // scene.addShape(left2);
-    // scene.addShape(right);
-
     Scene scene = createScene();
     std::vector<glm::vec4>& sceneData = scene.getScene();
-
-    for (glm::vec4 value : sceneData)
-    {
-        std::cout << glm::to_string(value) << "\n";
-    }
 
     camera.position = glm::vec3(0.0f, 0.0f, 0.0f);
 
@@ -171,8 +147,7 @@ int main()
     data.cameraFocusDist = 12.0;
     data.cameraFov = 20.0f;
     data.cameraAperture = 0.1;
-    data.imageSampling = 100;
-    data.maxDepth = 50;
+    data.maxDepth = 10;
     data.aspectRatio = ASPECT_RATIO;
 
     KRE::ComputeShader computeShader;
@@ -185,39 +160,49 @@ int main()
     glGenBuffers(1, &sceneSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, sceneSSBO);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4) * sceneData.size(), sceneData.data(), GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, sceneSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, sceneSSBO);
 
     unsigned int dataSSBO;
     glGenBuffers(1, &dataSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, dataSSBO);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ConstantData), &data, GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, dataSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, dataSSBO);
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
     shader.bind();
     shader.setUniformInt("u_Texture", 0);
 
-    {
-        int localWorkGroupSize = 16;
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, sceneSSBO);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, dataSSBO);
-        computeShader.bind();
-        glDispatchCompute(textureWidth / localWorkGroupSize, textureHeight / localWorkGroupSize, 1);
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-    }
+    float sampleCount = 1;
 
     while (!glfwWindowShouldClose(window))
     {
         KRE::Clock::tick();
 
+        {
+            int localWorkGroupSize = 16;
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, sceneSSBO);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, dataSSBO);
+            computeShader.bind();
+            computeShader.setUniformFloat("u_SampleCount", sampleCount);
 
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, outputImage);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, dataImage);
+
+            glDispatchCompute(textureWidth / localWorkGroupSize, textureHeight / localWorkGroupSize, 1);
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            sampleCount += 1.0f;
+        }
+
+        std::cout << "\r" << (int)sampleCount;
 
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
+        glBindTexture(GL_TEXTURE_2D, outputImage);
 
         VAO.bind();
         shader.bind();
@@ -250,7 +235,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     }
 }
 
-void createTexture(unsigned int& id, int width, int height)
+void createTexture(unsigned int& id, int width, int height, int bindPoint)
 {
     glGenTextures(1, &id);
     glActiveTexture(GL_TEXTURE0);
@@ -261,7 +246,7 @@ void createTexture(unsigned int& id, int width, int height)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
-    glBindImageTexture(0, id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+    glBindImageTexture(bindPoint, id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 }
 
 float random()
@@ -276,7 +261,7 @@ Scene createScene()
     unsigned int groundMat = scene.addMaterial(Lambertian(glm::vec3(0.5, 0.5, 0.5)));
     scene.addShape(Sphere(glm::vec3(0, -1000, 0), 1000, groundMat));
 
-    int maxSize = 5;
+    int maxSize = 7;
 
     for (int a = -maxSize; a < maxSize; a++)
     {

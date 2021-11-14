@@ -4,13 +4,14 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 layout (rgba32f, binding = 0) uniform image2D imgOutput;
+layout (rgba32f, binding = 1) uniform image2D imgData;
 
-layout (std430, binding = 1) buffer SSBO_SceneData
+layout (std430, binding = 2) buffer SSBO_SceneData
 {
     vec4 ssbo_SceneData[];
 };
 
-layout (std430, binding = 2) buffer SSBO_Data
+layout (std430, binding = 3) buffer SSBO_Data
 {
     vec3 ssbo_CameraPos;
     vec3 ssbo_CameraLookAt;
@@ -19,10 +20,11 @@ layout (std430, binding = 2) buffer SSBO_Data
     float ssbo_CameraFocusDist;
     float ssbo_CameraFOV;
     float ssbo_CameraAperture;
-    uint ssbo_Sampling;
     uint ssbo_MaxDepth;
     float ssbo_AspectRatio;
 };
+
+uniform float u_SampleCount;
 
 struct Ray
 {
@@ -87,7 +89,7 @@ void main()
 
     ivec2 dims = imageSize(imgOutput);
 
-    seed = hash(gl_GlobalInvocationID.x) ^ hash(gl_GlobalInvocationID.y * workGroupSize.y);
+    seed = hash(gl_GlobalInvocationID.x) ^ hash(gl_GlobalInvocationID.y * workGroupSize.y) ^ hash(uint(u_SampleCount));
 
     // Shapes, Shape data, Material Data, Extra
     header = ivec4(ssbo_SceneData[0]);
@@ -116,14 +118,20 @@ void main()
     float infinite = 1.0/0.0;
     vec3 finalColour = getPixelColour(0.0001, infinite);
 
+    // Get previous summed total
+    vec4 previousPx = imageLoad(imgData, pixelCoords);
+    finalColour += previousPx.rgb;
+
+    // Add Colour to the storage Image
+    imageStore(imgData, pixelCoords, vec4(finalColour, 1.0));
+
     // Gamma Correction
-    float gamma = 1.0 / float(ssbo_Sampling);
+    float gamma = 1.0 / float(u_SampleCount);
     finalColour.r = sqrt(gamma * finalColour.r);
     finalColour.g = sqrt(gamma * finalColour.g);
     finalColour.b = sqrt(gamma * finalColour.b);
 
     vec4 pixel = vec4(finalColour, 1.0);
-
     // Store Pixel
     imageStore(imgOutput, pixelCoords, pixel);
 }
@@ -138,69 +146,66 @@ vec3 getPixelColour(in float minT, in float maxT)
     vec3 finalColour = vec3(0.0);
     HitRecord rec;
 
-    for (int s = 0; s < ssbo_Sampling; s++)
+    uint depth = ssbo_MaxDepth;
+    Ray currentRay;
+
+    float x = (float(pixelCoords.x) + (rand(seed) / 2.0)) / float(dims.x);
+    float y = (float(pixelCoords.y) + (rand(seed) / 2.0)) / float(dims.y);
+
+    getRay(currentRay, x, y);
+
+    vec3 colour = vec3(1.0);
+    while (true)
     {
-        uint depth = ssbo_MaxDepth;
-        Ray currentRay;
-
-        float x = (float(pixelCoords.x) + (rand(seed) / 2.0)) / float(dims.x);
-        float y = (float(pixelCoords.y) + (rand(seed) / 2.0)) / float(dims.y);
-
-        getRay(currentRay, x, y);
-
-        vec3 colour = vec3(1.0);
-        while (true)
+        if (depth <= 0)
         {
-            if (depth <= 0)
+            colour = vec3(0.0);
+            break;
+        }
+
+        HitRecord tempRec;
+
+        if (worldHit(currentRay, minT, maxT, tempRec))
+        {
+            Ray scattered;
+            vec3 attenuation;
+
+            bool hit = false;
+            switch (tempRec.matType)
             {
-               colour = vec3(0.0);
-               break;
-            }
-
-            HitRecord tempRec;
-
-            if (worldHit(currentRay, minT, maxT, tempRec))
-            {
-                Ray scattered;
-                vec3 attenuation;
-
-                bool hit = false;
-                switch (tempRec.matType)
-                {
-                case 0:
-                    hit = scatterLambertian(currentRay, tempRec, attenuation, scattered);
-                    break;
-                case 1:
-                    hit = scatterMetal(currentRay, tempRec, attenuation, scattered);
-                    break;
-                case 2:
-                    hit = scatterDielectric(currentRay, tempRec, attenuation, scattered);
-                    break;
-                }
-
-                if (hit)
-                {
-                    currentRay = scattered;
-                    colour *= attenuation;
-                }
-                else
-                    colour = vec3(0.0);
-
-                rec = tempRec;
-            }
-            else
-            {
-                float t = (currentRay.direction.y + abs(lowerLeftCorner.y)) / (abs(lowerLeftCorner.y) * 2.0);
-                colour *= (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
-
+            case 0:
+                hit = scatterLambertian(currentRay, tempRec, attenuation, scattered);
+                break;
+            case 1:
+                hit = scatterMetal(currentRay, tempRec, attenuation, scattered);
+                break;
+            case 2:
+                hit = scatterDielectric(currentRay, tempRec, attenuation, scattered);
                 break;
             }
 
-            depth--;
+            if (hit)
+            {
+                currentRay = scattered;
+                colour *= attenuation;
+            }
+            else
+                colour = vec3(0.0);
+
+            rec = tempRec;
+        }
+        else
+        {
+            float t = (currentRay.direction.y + abs(lowerLeftCorner.y)) / (abs(lowerLeftCorner.y) * 2.0);
+            colour *= (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+
+            break;
         }
 
-        finalColour += colour;
+        depth--;
     }
+
+    finalColour += colour;
 
     return finalColour;
 }
