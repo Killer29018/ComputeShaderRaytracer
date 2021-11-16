@@ -2,13 +2,23 @@
 
 #define PI 3.14159
 
+struct Shape
+{
+    vec3 position;
+    vec3 size;
+    vec3 colour;
+
+    // ShapeType MatType MatExtra
+    vec4 extraInfo;
+};
+
 layout (local_size_x = 16, local_size_y = 16) in;
 layout (rgba32f, binding = 0) uniform image2D imgOutput;
 layout (rgba32f, binding = 1) uniform image2D imgData;
 
 layout (std430, binding = 2) buffer SSBO_SceneData
 {
-    vec4 ssbo_SceneData[];
+    Shape ssbo_SceneData[];
 };
 
 layout (std430, binding = 3) buffer SSBO_Data
@@ -43,15 +53,12 @@ struct HitRecord
     vec3 point;
     vec3 normal;
     bool frontFace;
+
     uint matType;
     Material mat;
+
     float t;
 };
-
-ivec4 header;
-uint shapeDataOffset;
-uint shapeMaterialOffset;
-uint shapeExtraOffset;
 
 vec3 lowerLeftCorner;
 vec3 horizontal;
@@ -91,12 +98,6 @@ void main()
 
     seed = hash(gl_GlobalInvocationID.x) ^ hash(gl_GlobalInvocationID.y * workGroupSize.y) ^ hash(uint(u_SampleCount));
 
-    // Shapes, Shape data, Material Data, Extra
-    header = ivec4(ssbo_SceneData[0]);
-    shapeDataOffset = header.x + 1;
-    shapeMaterialOffset = header.x + header.y + 1;
-    shapeExtraOffset = header.x + header.y + header.z + 1;
-
     // Camera
     float theta = radians(ssbo_CameraFOV);
     float h = tan(theta/2.0);
@@ -132,6 +133,11 @@ void main()
     finalColour.b = sqrt(gamma * finalColour.b);
 
     vec4 pixel = vec4(finalColour, 1.0);
+
+    // int index = pixelCoords.x % ssbo_SceneData.length();
+    // Shape s = ssbo_SceneData[index];
+    // pixel = vec4(s.extraInfo);
+
     // Store Pixel
     imageStore(imgOutput, pixelCoords, pixel);
 }
@@ -215,29 +221,29 @@ bool worldHit(in Ray ray, in float minT, in float maxT, inout HitRecord rec)
     bool hitAnything = false;
     float closest = maxT;
 
-    for (int i = 1; i < header.x + 1; i++)
+    for (int i = 0; i < ssbo_SceneData.length(); i++)
     {
         bool hit = false;
-        ivec4 shape = ivec4(ssbo_SceneData[i]);
-        if (shape.x == 0) // Circle
+        Shape shape = ssbo_SceneData[i];
+        if (uint(shape.extraInfo.x) == 0) // Circle
         {
-            vec3 centre = ssbo_SceneData[shapeDataOffset + shape.y].xyz;
-            float radius = ssbo_SceneData[shapeDataOffset + shape.y].w;
+            vec3 centre = shape.position;
+            float radius = shape.size.x;
 
             hit = sphereHit(ray, centre, radius, minT, closest, rec);
         }
 
         if (hit)
         {
-            vec3 colour = ssbo_SceneData[shapeMaterialOffset + shape.z].xyz;
-            float extra = ssbo_SceneData[shapeMaterialOffset + shape.z].w;
-            float materialType = ssbo_SceneData[shapeExtraOffset + shape.w].x;
+            vec3 colour = shape.colour;
+            float extra = shape.extraInfo.z;
+            uint materialType = uint(shape.extraInfo.y);
 
             Material mat;
             mat.albedo = colour;
             mat.extra = extra;
             rec.mat = mat;
-            rec.matType = uint(materialType);
+            rec.matType = materialType;
 
             closest = rec.t;
             hitAnything = true;

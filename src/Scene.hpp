@@ -4,16 +4,16 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-enum class MaterialType
+enum MaterialType
 {
-    Lambertian = 0,
-    Metal = 1,
-    Dielectric = 2
+    Mat_Lambertian = 0,
+    Mat_Metal = 1,
+    Mat_Dielectric = 2
 };
 
-enum class ShapeType
+enum ShapeType
 {
-    Sphere = 0
+    Shape_Sphere = 0
 };
 
 struct Material
@@ -31,67 +31,58 @@ struct Material
 struct Lambertian : public Material
 {
     Lambertian(glm::vec3 colour)
-        : Material(MaterialType::Lambertian, colour, 0.0f) {}
+        : Material(Mat_Lambertian, colour, 0.0f) {}
 };
 
 struct Metal : public Material
 {
     Metal(glm::vec3 colour, float fuzzy)
-        : Material(MaterialType::Metal, colour, fuzzy) {}
+        : Material(Mat_Metal, colour, fuzzy) {}
 };
 
 struct Dielectric : public Material
 {
     Dielectric(float ir)
-        : Material(MaterialType::Dielectric, glm::vec3(1.0), ir) {}
+        : Material(Mat_Dielectric, glm::vec3(1.0), ir) {}
 };
 
 struct Shape
 {
-    glm::vec3 position;
-    unsigned int materialIndex;
-    ShapeType type;
+    alignas(16) glm::vec3 position;
+    alignas(16) glm::vec3 size;
+    alignas(16) glm::vec3 colour;
 
-    float radius;
+    // ShapeType MatType MatExtra Throwaway
+    alignas(16) glm::vec4 extraInfo;
 
-    Shape(glm::vec3 position, unsigned int mat, ShapeType type)
-        : position(position), materialIndex(mat), type(type) {}
+    Shape(ShapeType type, glm::vec3 position, glm::vec3 size, MaterialType matType, glm::vec3 colour, float materialExtra)
+        : position(position), size(size), colour(colour)
+    {
+        extraInfo.x = type;
+        extraInfo.y = matType;
+        extraInfo.z = materialExtra;
+    }
 };
 
 struct Sphere : Shape
 {
-    Sphere(glm::vec3 position, float radius, unsigned int mat)
-        : Shape(position, mat, ShapeType::Sphere)
-    {
-        this->radius = radius;
-    }
+    Sphere(glm::vec3 position, float radius, const Material& mat)
+        : Shape(Shape_Sphere, position, glm::vec3(radius), mat.materialType, mat.colour, mat.extraInfo) {}
 };
 
 class Scene
 {
 public:
 private:
-    std::vector<Shape> m_Shapes;
-    std::vector<Material> m_Materials;
-
-    bool m_Updated = false;
-    std::vector<glm::vec4> m_Scene;
-
-    float m_ShapeCount = 0;
-    float m_ShapeDataCount = 0;
-    float m_MaterialCount = 0;
-    float m_ExtraCount = 0;
+    std::vector<Shape> m_Scene;
 public:
     Scene() = default;
     ~Scene() = default;
 
-    std::vector<glm::vec4>& getScene();
-    std::vector<glm::vec4>& createScene();
+    std::vector<Shape>& getScene();
 
     void addShape(const Shape& shape);
-    unsigned int addMaterial(const Material& material);
 private:
-    void addElementToScene(unsigned int& offset, glm::vec4& value);
 };
 
 #endif

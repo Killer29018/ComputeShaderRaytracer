@@ -10,6 +10,9 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/random.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "STB\stb_image.h"
+
 #include "Scene.hpp"
 
 static const float ASPECT_RATIO = 16.0/9.0;
@@ -122,11 +125,9 @@ int main()
     KRE::CameraMovementTypes movement = KRE::CameraMovementTypes::LOCKED_PERSPECTIVE;
     KRE::Camera camera(glm::vec2(SCREEN_WIDTH, SCREEN_HEIGHT), perspective, movement, glm::vec3(0.0f, 0.0f, 0.0f));
 
-    std::cout << "sX: " << SCREEN_WIDTH << " sY: " << SCREEN_HEIGHT << "\n";
-    std::cout << "Aspect Ratio: " << ASPECT_RATIO << "\n";
-
     Scene scene = createScene();
-    std::vector<glm::vec4>& sceneData = scene.getScene();
+    std::vector<Shape>& sceneData = scene.getScene();
+    std::cout << sizeof(Shape) << " : " << sceneData.size() << " : " << sizeof(Shape) * sceneData.size() << " : " << sizeof(sceneData) << "\n";
 
     camera.position = glm::vec3(0.0f, 0.0f, 0.0f);
 
@@ -154,12 +155,10 @@ int main()
     computeShader.compilePath("res/shaders/BasicCompute.glsl");
     computeShader.bind();
 
-    std::cout << sizeof(glm::vec4) << ": " << sceneData.size() << ": " << sizeof(glm::vec4) * sceneData.size() << "\n";
-
     unsigned int sceneSSBO;
     glGenBuffers(1, &sceneSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, sceneSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4) * sceneData.size(), sceneData.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Shape) * sceneData.size(), sceneData.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, sceneSSBO);
 
     unsigned int dataSSBO;
@@ -174,11 +173,13 @@ int main()
     shader.setUniformInt("u_Texture", 0);
 
     float sampleCount = 1;
+    float maxSamples = 250;
 
     while (!glfwWindowShouldClose(window))
     {
         KRE::Clock::tick();
 
+        if (!(sampleCount >= maxSamples))
         {
             int localWorkGroupSize = 16;
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, sceneSSBO);
@@ -196,7 +197,7 @@ int main()
             sampleCount += 1.0f;
         }
 
-        std::cout << "\r" << (int)sampleCount;
+        std::cout << "\r" << "Samples : " << (int)sampleCount;
 
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -258,7 +259,7 @@ Scene createScene()
 {
     Scene scene;
 
-    unsigned int groundMat = scene.addMaterial(Lambertian(glm::vec3(0.5, 0.5, 0.5)));
+    Material groundMat = Lambertian(glm::vec3(0.5, 0.5, 0.5));
     scene.addShape(Sphere(glm::vec3(0, -1000, 0), 1000, groundMat));
 
     int maxSize = 7;
@@ -272,36 +273,36 @@ Scene createScene()
 
             if ((center - glm::vec3(4, 0.2, 0)).length() > 0.9)
             {
-                unsigned int mat;
+                Material mat;
                 if (chooseMat < 0.8)
                 {
                     glm::vec3 albedo = glm::linearRand(glm::vec3(0.0), glm::vec3(1.0));
-                    mat = scene.addMaterial(Lambertian(albedo));
+                    mat = Lambertian(albedo);
                     scene.addShape(Sphere(center, 0.2, mat));
                 }
                 else if (chooseMat < 0.95)
                 {
                     glm::vec3 albedo = glm::linearRand(glm::vec3(0.5), glm::vec3(1.0));
                     float fuzz = random() / 0.5f;
-                    mat = scene.addMaterial(Metal(albedo, fuzz));
+                    mat = Metal(albedo, fuzz);
                     scene.addShape(Sphere(center, 0.2, mat));
                 }
                 else
                 {
-                    mat = scene.addMaterial(Dielectric(1.5));
+                    mat = Dielectric(1.5);
                     scene.addShape(Sphere(center, 0.2, mat));
                 }
             }
         }
     }
 
-    unsigned int m1 = scene.addMaterial(Dielectric(1.5));
+    Material m1 = Dielectric(1.5);
     scene.addShape(Sphere(glm::vec3(0, 1, 0), 1.0, m1));
 
-    unsigned int m2 = scene.addMaterial(Lambertian(glm::vec3(0.4, 0.2, 0.1)));
+    Material m2 = Lambertian(glm::vec3(0.4, 0.2, 0.1));
     scene.addShape(Sphere(glm::vec3(-4, 1, 0), 1.0, m2));
 
-    unsigned int m3 = scene.addMaterial(Metal(glm::vec3(0.7, 0.6, 0.5), 0.0));
+    Material m3 = Metal(glm::vec3(0.7, 0.6, 0.5), 0.0);
     scene.addShape(Sphere(glm::vec3(4, 1, 0), 1.0, m3));
 
     return scene;
