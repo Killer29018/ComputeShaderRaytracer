@@ -77,7 +77,9 @@ vec3 rayAt(in Ray r, in float t);
 void getRay(inout Ray r, float x, float y);
 
 bool sphereHit(in Ray ray, in vec3 sphereCenter, in float sphereRadius, in float tMin, in float tMax, inout HitRecord rec);
-bool xyRectHit(in Ray ray, in vec3 position, in vec2 size, in float tMin, in float tMax, inout HitRecord rec);
+bool xyRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec);
+bool xzRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec);
+bool yzRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec);
 
 bool scatterLambertian(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattereed);
 bool scatterMetal(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattereed);
@@ -107,7 +109,6 @@ void main()
     // Camera
     float theta = radians(ssbo_CameraFOV);
     float h = tan(theta/2.0);
-    float aspectRatio = 16.0/9.0;
     float viewportHeight = 2.0 * h;
     float viewportWidth = ssbo_AspectRatio * viewportHeight;
 
@@ -250,7 +251,13 @@ bool worldHit(in Ray ray, in float minT, in float maxT, inout HitRecord rec)
             hit = sphereHit(ray, centre, radius, minT, closest, rec);
             break;
         case 1: // XY Rect
-            hit = xyRectHit(ray, shape.position, vec2(shape.size), minT, closest, rec);
+            hit = xyRectHit(ray, shape.position, shape.size, minT, closest, rec);
+            break;
+        case 2: // XZ Rect
+            hit = xzRectHit(ray, shape.position, shape.size, minT, closest, rec);
+            break;
+        case 3: // YZ Rect
+            hit = yzRectHit(ray, shape.position, shape.size, minT, closest, rec);
             break;
         }
 
@@ -322,13 +329,8 @@ bool sphereHit(Ray ray, vec3 sphereCenter, float sphereRadius, float tMin, float
     return true;
 }
 
-bool xyRectHit(in Ray ray, in vec3 position, in vec2 size, in float tMin, in float tMax, inout HitRecord rec)
+bool xyRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec)
 {
-    float x0 = position.x;
-    float x1 = size.x;
-    float y0 = position.y;
-    float y1 = size.y;
-
     float k = position.z;
 
     float t = (k - ray.origin.z) / ray.direction.z;
@@ -339,12 +341,58 @@ bool xyRectHit(in Ray ray, in vec3 position, in vec2 size, in float tMin, in flo
     float x = ray.origin.x + t*ray.direction.x;
     float y = ray.origin.y + t*ray.direction.y;
 
-    if (x < x0 || x > x1 || y < y0 || y > y1)
+    if (x < position.x || x > size.x || y < position.y || y > size.y)
         return false;
 
     rec.t = t;
     rec.point = rayAt(ray, t);
     vec3 normal = vec3(0, 0, 1);
+    setFrontFace(rec, ray, normal);
+
+    return true;
+}
+
+bool xzRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec)
+{
+    float k = position.y;
+
+    float t = (k - ray.origin.y) / ray.direction.y;
+
+    if (t < tMin || t > tMax)
+        return false;
+
+    float x = ray.origin.x + t*ray.direction.x;
+    float z = ray.origin.z + t*ray.direction.z;
+
+    if (x < position.x || x > size.x || z < position.z || z > size.z)
+        return false;
+
+    rec.t = t;
+    rec.point = rayAt(ray, t);
+    vec3 normal = vec3(0, 1, 0);
+    setFrontFace(rec, ray, normal);
+
+    return true;
+}
+
+bool yzRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec)
+{
+    float k = position.x;
+
+    float t = (k - ray.origin.x) / ray.direction.x;
+
+    if (t < tMin || t > tMax)
+        return false;
+
+    float y = ray.origin.y + t*ray.direction.y;
+    float z = ray.origin.z + t*ray.direction.z;
+
+    if (y < position.y || y > size.y || z < position.z || z > size.z)
+        return false;
+
+    rec.t = t;
+    rec.point = rayAt(ray, t);
+    vec3 normal = vec3(1, 0, 0);
     setFrontFace(rec, ray, normal);
 
     return true;

@@ -15,7 +15,9 @@ enum MaterialType
 enum ShapeType
 {
     Shape_Sphere = 0,
-    Shape_XYRect = 1
+    Shape_XYRect = 1,
+    Shape_XZRect = 2,
+    Shape_YZRect = 3
 };
 
 struct Material
@@ -82,6 +84,18 @@ struct XYRect : Shape
 {
     XYRect(float x0, float x1, float y0, float y1, float k, const Material& mat)
         : Shape(Shape_XYRect, glm::vec3(x0, y0, k), glm::vec3(x1, y1, 0.0), mat.materialType, mat.colour, mat.extraInfo) {}
+};
+
+struct XZRect : Shape
+{
+    XZRect(float x0, float x1, float z0, float z1, float k, const Material& mat)
+        : Shape(Shape_XZRect, glm::vec3(x0, k, z0), glm::vec3(x1, 0.0, z1), mat.materialType, mat.colour, mat.extraInfo) {}
+};
+
+struct YZRect : Shape
+{
+    YZRect(float y0, float y1, float z0, float z1, float k, const Material& mat)
+        : Shape(Shape_YZRect, glm::vec3(k, y0, z0), glm::vec3(0.0, y1, z1), mat.materialType, mat.colour, mat.extraInfo) {}
 };
 
 class Scene

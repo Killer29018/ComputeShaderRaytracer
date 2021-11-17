@@ -15,8 +15,9 @@
 
 #include "Scene.hpp"
 
-static const float ASPECT_RATIO = 16.0/9.0;
-static const unsigned int SCREEN_WIDTH = 1280;
+// static const float ASPECT_RATIO = 16.0/9.0;
+static const float ASPECT_RATIO = 1.0;
+static const unsigned int SCREEN_WIDTH = 640;
 static const unsigned int SCREEN_HEIGHT = SCREEN_WIDTH / ASPECT_RATIO;
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -26,6 +27,7 @@ void createTexture(unsigned int& id, int width, int height, int bindPoint);
 
 Scene randomScene();
 Scene simpleLight();
+Scene cornellBox();
 
 struct ConstantData
 {
@@ -140,7 +142,7 @@ int main()
 
     Scene scene;
 
-    unsigned int currentChoice = 2;
+    unsigned int currentChoice = 3;
     switch(currentChoice)
     {
     case 1:
@@ -158,6 +160,14 @@ int main()
         data.cameraFov = 20.0f;
         break;
     case 3:
+        scene = cornellBox();
+        backgroundColour = glm::vec3(0.0f);
+        data.aspectRatio = 1.0f;
+        data.cameraPos = glm::vec3(278, 278, -800);
+        data.cameraLookAt = glm::vec3(278, 278, 0);
+        data.cameraFov = 40.0f;
+        break;
+    default:
         backgroundColour = glm::vec3(0.0f);
         break;
     }
@@ -338,6 +348,25 @@ Scene simpleLight()
     scene.addShape(XYRect(3, 5, 1, 3, -2, light1));
 
     scene.addShape(Sphere(glm::vec3(0, 7, 0), 2, light1));
+
+    return scene;
+}
+
+Scene cornellBox()
+{
+    Scene scene;
+
+    Material red = Lambertian(glm::vec3(0.65, 0.05, 0.05));
+    Material white = Lambertian(glm::vec3(0.73));
+    Material green = Lambertian(glm::vec3(0.12, 0.45, 0.15));
+    Material light = DiffuseLight(glm::vec3(15));
+
+    scene.addShape(YZRect(0, 555, 0, 555, 555, green));
+    scene.addShape(YZRect(0, 555, 0, 555, 0, red));
+    scene.addShape(XZRect(213, 343, 227, 332, 554, light));
+    scene.addShape(XZRect(0, 555, 0, 555, 0, white));
+    scene.addShape(XZRect(0, 555, 0, 555, 555, white));
+    scene.addShape(XYRect(0, 555, 0, 555, 555, white));
 
     return scene;
 }
