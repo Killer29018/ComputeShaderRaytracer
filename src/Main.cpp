@@ -15,7 +15,6 @@
 
 #include "Scene.hpp"
 
-// static const float ASPECT_RATIO = 16.0/9.0;
 static const float ASPECT_RATIO = 1.0;
 static const unsigned int SCREEN_WIDTH = 640;
 static const unsigned int SCREEN_HEIGHT = SCREEN_WIDTH / ASPECT_RATIO;
@@ -162,7 +161,7 @@ int main()
     case 3:
         scene = cornellBox();
         backgroundColour = glm::vec3(0.0f);
-        data.aspectRatio = 1.0f;
+        // data.aspectRatio = 1.0f;
         data.cameraPos = glm::vec3(278, 278, -800);
         data.cameraLookAt = glm::vec3(278, 278, 0);
         data.cameraFov = 40.0f;
@@ -347,7 +346,7 @@ Scene simpleLight()
     // scene.addShape(Sphere(glm::vec3(2, 2, -4), 0.5, light1));
     scene.addShape(XYRect(3, 5, 1, 3, -2, light1));
 
-    scene.addShape(Sphere(glm::vec3(0, 7, 0), 2, light1));
+    // scene.addShape(Sphere(glm::vec3(0, 7, 0), 2, light1));
 
     return scene;
 }
