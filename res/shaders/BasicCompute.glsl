@@ -35,6 +35,7 @@ layout (std430, binding = 3) buffer SSBO_Data
 };
 
 uniform float u_SampleCount;
+uniform vec3 u_BackgroundColour;
 
 struct Ray
 {
@@ -74,11 +75,16 @@ bool worldHit(in Ray r, in float minT, in float maxT, inout HitRecord rec);
 void setFrontFace(inout HitRecord rec, in Ray ray, in vec3 normal);
 vec3 rayAt(in Ray r, in float t);
 void getRay(inout Ray r, float x, float y);
+
 bool sphereHit(in Ray ray, in vec3 sphereCenter, in float sphereRadius, in float tMin, in float tMax, inout HitRecord rec);
+bool xyRectHit(in Ray ray, in vec3 position, in vec2 size, in float tMin, in float tMax, inout HitRecord rec);
 
 bool scatterLambertian(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattereed);
 bool scatterMetal(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattereed);
 bool scatterDielectric(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattered);
+bool scatterDiffuseLight(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattered);
+
+vec3 emittedDiffuseLight(in vec3 point);
 
 uint hash(uint key);
 float rand(inout uint seed);
@@ -134,9 +140,7 @@ void main()
 
     vec4 pixel = vec4(finalColour, 1.0);
 
-    // int index = pixelCoords.x % ssbo_SceneData.length();
-    // Shape s = ssbo_SceneData[index];
-    // pixel = vec4(s.extraInfo);
+    // pixel = vec4(s.colour.xyz, 1.0);
 
     // Store Pixel
     imageStore(imgOutput, pixelCoords, pixel);
@@ -161,6 +165,7 @@ vec3 getPixelColour(in float minT, in float maxT)
     getRay(currentRay, x, y);
 
     vec3 colour = vec3(1.0);
+    vec3 emittedTotal = vec3(1.0);
     while (true)
     {
         if (depth <= 0)
@@ -175,6 +180,7 @@ vec3 getPixelColour(in float minT, in float maxT)
         {
             Ray scattered;
             vec3 attenuation;
+            vec3 emitted = vec3(0.0);
 
             bool hit = false;
             switch (tempRec.matType)
@@ -188,22 +194,34 @@ vec3 getPixelColour(in float minT, in float maxT)
             case 2:
                 hit = scatterDielectric(currentRay, tempRec, attenuation, scattered);
                 break;
+            case 3:
+                emitted = tempRec.mat.albedo;
+                hit = scatterDiffuseLight(currentRay, tempRec, attenuation, scattered);
+                break;
             }
+
+            // colour = tempRec.mat.albedo;
+            // break;
 
             if (hit)
             {
                 currentRay = scattered;
-                colour *= attenuation;
+
+                colour *= (emitted + attenuation);
             }
             else
-                colour = vec3(0.0);
+            {
+                colour *= emitted;
+                depth = 0;
+                break;
+            }
 
             rec = tempRec;
+
         }
         else
         {
-            float t = (currentRay.direction.y + abs(lowerLeftCorner.y)) / (abs(lowerLeftCorner.y) * 2.0);
-            colour *= (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+            colour *= u_BackgroundColour;
 
             break;
         }
@@ -211,9 +229,7 @@ vec3 getPixelColour(in float minT, in float maxT)
         depth--;
     }
 
-    finalColour += colour;
-
-    return finalColour;
+    return colour;
 }
 
 bool worldHit(in Ray ray, in float minT, in float maxT, inout HitRecord rec)
@@ -225,12 +241,17 @@ bool worldHit(in Ray ray, in float minT, in float maxT, inout HitRecord rec)
     {
         bool hit = false;
         Shape shape = ssbo_SceneData[i];
-        if (uint(shape.extraInfo.x) == 0) // Circle
+        switch (uint(shape.extraInfo.x))
         {
+        case 0: // Circle
             vec3 centre = shape.position;
             float radius = shape.size.x;
 
             hit = sphereHit(ray, centre, radius, minT, closest, rec);
+            break;
+        case 1: // XY Rect
+            hit = xyRectHit(ray, shape.position, vec2(shape.size), minT, closest, rec);
+            break;
         }
 
         if (hit)
@@ -242,6 +263,7 @@ bool worldHit(in Ray ray, in float minT, in float maxT, inout HitRecord rec)
             Material mat;
             mat.albedo = colour;
             mat.extra = extra;
+
             rec.mat = mat;
             rec.matType = materialType;
 
@@ -300,9 +322,44 @@ bool sphereHit(Ray ray, vec3 sphereCenter, float sphereRadius, float tMin, float
     return true;
 }
 
+bool xyRectHit(in Ray ray, in vec3 position, in vec2 size, in float tMin, in float tMax, inout HitRecord rec)
+{
+    float x0 = position.x;
+    float x1 = size.x;
+    float y0 = position.y;
+    float y1 = size.y;
+
+    float k = position.z;
+
+    float t = (k - ray.origin.z) / ray.direction.z;
+
+    if (t < tMin || t > tMax)
+        return false;
+
+    float x = ray.origin.x + t*ray.direction.x;
+    float y = ray.origin.y + t*ray.direction.y;
+
+    if (x < x0 || x > x1 || y < y0 || y > y1)
+        return false;
+
+    rec.t = t;
+    rec.point = rayAt(ray, t);
+    vec3 normal = vec3(0, 0, 1);
+    setFrontFace(rec, ray, normal);
+
+    return true;
+}
+
 bool scatterLambertian(in Ray ray, inout HitRecord rec, out vec3 attenuation, out Ray scattered)
 {
-    vec3 scatterDirection = rec.normal + randVec3(seed);
+    vec3 scatterDirection = rec.normal + normalize(randInUnitSphere(seed));
+
+    float s = 1e-8;
+    if (abs(scatterDirection.x) < s && abs(scatterDirection.y) < s && abs(scatterDirection.z) < s)
+    {
+        scatterDirection = rec.normal;
+    }
+
     scattered.origin = rec.point;
     scattered.direction = scatterDirection;
 
@@ -345,6 +402,11 @@ bool scatterDielectric(in Ray ray, inout HitRecord rec, out vec3 attenuation, ou
     scattered.origin = rec.point;
     scattered.direction = direction;
     return true;
+}
+
+bool scatterDiffuseLight(in Ray ray, inout HitRecord rec, out vec3 attenuation, out Ray scattered)
+{
+    return false;
 }
 
 uint hash(uint key)

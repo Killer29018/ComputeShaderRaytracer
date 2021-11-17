@@ -23,7 +23,9 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 void processKeys();
 
 void createTexture(unsigned int& id, int width, int height, int bindPoint);
-Scene createScene();
+
+Scene randomScene();
+Scene simpleLight();
 
 struct ConstantData
 {
@@ -125,35 +127,48 @@ int main()
     KRE::CameraMovementTypes movement = KRE::CameraMovementTypes::LOCKED_PERSPECTIVE;
     KRE::Camera camera(glm::vec2(SCREEN_WIDTH, SCREEN_HEIGHT), perspective, movement, glm::vec3(0.0f, 0.0f, 0.0f));
 
-    Scene scene = createScene();
-    std::vector<Shape>& sceneData = scene.getScene();
-    std::cout << sizeof(Shape) << " : " << sceneData.size() << " : " << sizeof(Shape) * sceneData.size() << " : " << sizeof(sceneData) << "\n";
-
-    camera.position = glm::vec3(0.0f, 0.0f, 0.0f);
-
-    camera.front = glm::vec3(0, 0, -1.0);
-    glm::vec3 cameraLookAt = camera.position + camera.front;
-
-    const float viewportHeight = 9;
-    const float viewportWidth = viewportHeight * ASPECT_RATIO;
-
-    camera.position = glm::vec3(13, 2, 3);
-    cameraLookAt = glm::vec3(0, 0, 0);
+    glm::vec3 backgroundColour = glm::vec3(0.7f, 0.8f, 1.0f);
 
     ConstantData data;
-    data.cameraPos = camera.position;
-    data.cameraLookAt = cameraLookAt;
     data.cameraUp = camera.up;
     data.cameraViewDist = 1.0f;
-    data.cameraFocusDist = 12.0;
-    data.cameraFov = 20.0f;
-    data.cameraAperture = 0.1;
+    data.cameraFocusDist = 10.0;
+    data.cameraFov = 40.0f;
+    data.cameraAperture = 0.0;
     data.maxDepth = 10;
     data.aspectRatio = ASPECT_RATIO;
+
+    Scene scene;
+
+    unsigned int currentChoice = 2;
+    switch(currentChoice)
+    {
+    case 1:
+        scene = randomScene();
+        data.cameraPos = glm::vec3(13, 2, 3);
+        data.cameraLookAt = glm::vec3(0, 0, 0);
+        data.cameraFov = 20.0f;
+        data.cameraAperture = 0.1f;
+        break;
+    case 2:
+        scene = simpleLight();
+        backgroundColour = glm::vec3(0.0f);
+        data.cameraPos = glm::vec3(26, 3, 6);
+        data.cameraLookAt = glm::vec3(0, 2, 0);
+        data.cameraFov = 20.0f;
+        break;
+    case 3:
+        backgroundColour = glm::vec3(0.0f);
+        break;
+    }
+
+    std::vector<Shape>& sceneData = scene.getScene();
+    std::cout << sceneData.size() << " : " << sizeof(Shape) * sceneData.size() << "\n";
 
     KRE::ComputeShader computeShader;
     computeShader.compilePath("res/shaders/BasicCompute.glsl");
     computeShader.bind();
+    computeShader.setUniformVector3("u_BackgroundColour", backgroundColour);
 
     unsigned int sceneSSBO;
     glGenBuffers(1, &sceneSSBO);
@@ -172,8 +187,8 @@ int main()
     shader.bind();
     shader.setUniformInt("u_Texture", 0);
 
-    float sampleCount = 1;
-    float maxSamples = 250;
+    float sampleCount = 0;
+    float maxSamples = 1000;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -195,9 +210,9 @@ int main()
             glDispatchCompute(textureWidth / localWorkGroupSize, textureHeight / localWorkGroupSize, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
             sampleCount += 1.0f;
+            std::cout << "\r" << "Samples : " << (int)sampleCount;
         }
 
-        std::cout << "\r" << "Samples : " << (int)sampleCount;
 
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -255,7 +270,7 @@ float random()
     return (rand() % 1000) / 1000.0f;
 }
 
-Scene createScene()
+Scene randomScene()
 {
     Scene scene;
 
@@ -304,6 +319,25 @@ Scene createScene()
 
     Material m3 = Metal(glm::vec3(0.7, 0.6, 0.5), 0.0);
     scene.addShape(Sphere(glm::vec3(4, 1, 0), 1.0, m3));
+
+    return scene;
+}
+
+Scene simpleLight()
+{
+    Scene scene;
+
+    // Material ground = Metal(glm::vec3(1.0, 1.0, 0.0), 0.9);
+    Material ground = Lambertian(glm::vec3(1.0, 1.0, 0.0));
+    Material center = Lambertian(glm::vec3(1.0, 0.0, 0.0));
+    scene.addShape(Sphere(glm::vec3(0, -1000, 0), 1000, ground));
+    scene.addShape(Sphere(glm::vec3(0, 2, 0), 2, center));
+
+    Material light1 = DiffuseLight(glm::vec3(4));
+    // scene.addShape(Sphere(glm::vec3(2, 2, -4), 0.5, light1));
+    scene.addShape(XYRect(3, 5, 1, 3, -2, light1));
+
+    scene.addShape(Sphere(glm::vec3(0, 7, 0), 2, light1));
 
     return scene;
 }
