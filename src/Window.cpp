@@ -3,10 +3,10 @@
 #include <glm/gtc/random.hpp>
 
 GLFWwindow* Window::window;
-KRE::Camera Window::camera;
+KRE::Camera Window::camera({0, 0});
 ConstantData Window::data;
 Scene Window::scene;
-float Window::aspectRatio = 16.0f / 9.0f;
+float Window::aspectRatio = 1.0;
 float Window::maxSamples = 1000.0f;
 
 KRE::ComputeShader Window::m_ComputeShader;
@@ -24,6 +24,27 @@ float Window::m_SampleCount = 0.0f;
 void Window::init(glm::vec2 windowSize)
 {
     m_WindowSize = windowSize;
+
+    initGLFW();
+
+    glfwSwapInterval(1);
+
+    int version = gladLoadGL(glfwGetProcAddress);
+    if (version == 0)
+    {
+        std::cerr << "Failed to initialize OpenGL Context\n";
+        exit(-1);
+    }
+
+    std::cout << "Loaded Opengl " << GLAD_VERSION_MAJOR(version) << "." << GLAD_VERSION_MINOR(version) << "\n";
+
+    glViewport(0, 0, m_WindowSize.x, m_WindowSize.y);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glfwSetKeyCallback(window, Window::KeyCallback);
+
+    srand(time(0));
 
     camera = KRE::Camera(windowSize,
     KRE::CameraPerspective::PERSPECTIVE,
@@ -84,10 +105,9 @@ void Window::processKeys()
 
 void Window::resetData()
 {
-    ConstantData data;
     data.cameraPos = glm::vec3(0.0, 0.0, 1.0);
     data.cameraLookAt = glm::vec3(0.0, 0.0, 0.0);
-    data.cameraUp = glm::vec3(0.0, 1.0, 0.0);
+    data.cameraUp = camera.up;
     data.background = glm::vec3(0.7, 0.8, 1.0);
     data.cameraViewDist = 1.0f;
     data.cameraFocusDist = 10.0;
@@ -194,6 +214,29 @@ void Window::KeyCallback(GLFWwindow* window, int key, int scancode, int action, 
     case GLFW_PRESS: KRE::Keyboard::pressKey(key); break;
     case GLFW_RELEASE: KRE::Keyboard::unpressKey(key); break;
     }
+}
+
+void Window::initGLFW()
+{
+    if (!glfwInit())
+        exit(-1);
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
+    window = glfwCreateWindow(m_WindowSize.x, m_WindowSize.y, "Raytracing", NULL, NULL);
+
+    if (!window)
+    {
+        std::cerr << "Failed to create Window\n";
+        glfwTerminate();
+        exit(-1);
+    }
+
+    glfwMakeContextCurrent(window);
 }
 
 void Window::createTexture(unsigned int& id, int width, int height, int bindPort)

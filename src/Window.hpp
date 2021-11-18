@@ -47,6 +47,8 @@ public:
 
     static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 private:
+    static void initGLFW();
+
     static void createTexture(unsigned int& image, int width, int height, int bindPort);
 
     static Scene randomScene();
