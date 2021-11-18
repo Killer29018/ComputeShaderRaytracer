@@ -26,6 +26,7 @@ layout (std430, binding = 3) buffer SSBO_Data
     vec3 ssbo_CameraPos;
     vec3 ssbo_CameraLookAt;
     vec3 ssbo_CameraUp;
+    vec3 ssbo_BackgroundColour;
     float ssbo_CameraViewDist;
     float ssbo_CameraFocusDist;
     float ssbo_CameraFOV;
@@ -35,7 +36,6 @@ layout (std430, binding = 3) buffer SSBO_Data
 };
 
 uniform float u_SampleCount;
-uniform vec3 u_BackgroundColour;
 
 struct Ray
 {
@@ -222,7 +222,7 @@ vec3 getPixelColour(in float minT, in float maxT)
         }
         else
         {
-            colour *= u_BackgroundColour;
+            colour *= ssbo_BackgroundColour;
 
             break;
         }
