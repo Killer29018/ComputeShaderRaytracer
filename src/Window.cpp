@@ -161,25 +161,25 @@ void Window::run()
     }
 }
 
-void Window::changeScene(int sceneOption)
+void Window::changeScene(SceneType sceneOption)
 {
     switch(sceneOption)
     {
-    case 1:
+    case Scene_RandomSpheres:
         scene = randomScene();
         data.cameraPos = glm::vec3(13, 2, 3);
         data.cameraLookAt = glm::vec3(0, 0, 0);
         data.cameraFov = 20.0f;
         data.cameraAperture = 0.1f;
         break;
-    case 2:
+    case Scene_Lighting:
         scene = simpleLight();
         data.background = glm::vec3(0.0f);
         data.cameraPos = glm::vec3(26, 3, 6);
         data.cameraLookAt = glm::vec3(0, 2, 0);
         data.cameraFov = 20.0f;
         break;
-    case 3:
+    case Scene_CornellBox:
         scene = cornellBox();
         data.background = glm::vec3(0.0f);
         // data.aspectRatio = 1.0f;

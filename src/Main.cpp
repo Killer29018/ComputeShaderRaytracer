@@ -12,15 +12,37 @@
 
 #include "Window.hpp"
 
-static const float ASPECT_RATIO = 1.0;
-static const unsigned int SCREEN_WIDTH = 640;
-static const unsigned int SCREEN_HEIGHT = SCREEN_WIDTH / ASPECT_RATIO;
-
-int main()
+int main(int argc, char* argv[])
 {
-    Window::init({ SCREEN_WIDTH, SCREEN_HEIGHT });
+    SceneType scene = Scene_CornellBox;
+    if (argc > 1)
+    {
+        int value = std::stoi(argv[1]);
+        if (value < 0 || value > 2)
+        {
+            std::cerr << "Invalid Range\n";
+            return -1;
+        }
 
-    Window::changeScene(3);
+        scene = (SceneType)value;
+    }
+
+    float aspectRatio = 16.0 / 9.0;
+    float screenWidth = 1280;
+
+    switch (scene)
+    {
+    case Scene_CornellBox:
+        aspectRatio = 1.0f;
+        screenWidth = 640;
+    }
+
+    float screenHeight = screenWidth / aspectRatio;
+
+    Window::aspectRatio = aspectRatio;
+
+    Window::init({ screenWidth, screenHeight });
+    Window::changeScene(scene);
     Window::uploadDataToCompute();
     Window::run();
 

@@ -9,6 +9,13 @@
 #include "Scene.hpp"
 #include "Data.hpp"
 
+enum SceneType
+{
+    Scene_RandomSpheres = 0,
+    Scene_Lighting = 1,
+    Scene_CornellBox = 2,
+};
+
 class Window
 {
 public:
@@ -42,7 +49,7 @@ public:
     static void resetData();
 
     static void run();
-    static void changeScene(int scene);
+    static void changeScene(SceneType scene);
     static void uploadDataToCompute();
 
     static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
