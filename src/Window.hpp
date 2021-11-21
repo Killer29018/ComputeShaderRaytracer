@@ -14,6 +14,7 @@ enum SceneType
     Scene_RandomSpheres = 0,
     Scene_Lighting = 1,
     Scene_CornellBox = 2,
+    Scene_FinishedCornellBox = 3,
 };
 
 class Window

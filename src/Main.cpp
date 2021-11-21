@@ -14,7 +14,7 @@
 
 int main(int argc, char* argv[])
 {
-    SceneType scene = Scene_CornellBox;
+    SceneType scene = Scene_FinishedCornellBox;
     if (argc > 1)
     {
         int value = std::stoi(argv[1]);
@@ -32,6 +32,7 @@ int main(int argc, char* argv[])
 
     switch (scene)
     {
+    case Scene_FinishedCornellBox:
     case Scene_CornellBox:
         aspectRatio = 1.0f;
         screenWidth = 640;

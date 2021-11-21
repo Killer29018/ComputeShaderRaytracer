@@ -79,7 +79,7 @@ bool calculateHit(in Ray ray, in Shape shape, in float tMin, in float tMax, inou
 
 // Rotation
 void rotate(inout Ray ray, in Shape shape);
-void unrotate(inout HitRecord rec, in Shape shape);
+void unrotate(in Ray ray, inout HitRecord rec, in Shape shape);
 
 vec2 rotateAxis(in vec2 values, in float sinTheta, in float cosTheta);
 vec2 unrotateAxis(in vec2 values, in float sinTheta, in float cosTheta);
@@ -289,7 +289,7 @@ bool calculateHit(in Ray ray, in Shape shape, in float tMin, in float tMax, inou
     hit = shapeHit(currentRay, shape, tMin, tMax, rec);
 
     if (hit)
-        unrotate(rec, shape);
+        unrotate(currentRay, rec, shape);
 
     return hit;
 }
@@ -332,7 +332,7 @@ void rotate(inout Ray ray, in Shape shape)
     ray.origin += shape.position;
 }
 
-void unrotate(inout HitRecord rec, in Shape shape)
+void unrotate(in Ray ray, inout HitRecord rec, in Shape shape)
 {
     float sinTheta = sin(radians(shape.rotation.w));
     float cosTheta = cos(radians(shape.rotation.w));
@@ -368,6 +368,8 @@ void unrotate(inout HitRecord rec, in Shape shape)
     }
 
     rec.point += shape.position;
+
+    setFrontFace(rec, ray, rec.normal);
 }
 
 vec2 rotateAxis(in vec2 values, in float sinTheta, in float cosTheta)

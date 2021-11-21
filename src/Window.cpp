@@ -90,8 +90,6 @@ void Window::init(glm::vec2 windowSize)
     createTexture(m_OutputImage, windowSize.x, windowSize.y, 0);
     createTexture(m_DataImage, windowSize.x, windowSize.y, 1);
 
-    std::cout << m_OutputImage << ": " << m_DataImage << "\n";
-
     glGenBuffers(1, &m_SceneSSBO);
     glGenBuffers(1, &m_DataSSBO);
 
@@ -119,7 +117,6 @@ void Window::resetData()
 
 void Window::run()
 {
-    std::cout << m_OutputImage << ": " << m_DataImage << "\n";
     while (!glfwWindowShouldClose(window))
     {
         KRE::Clock::tick();
@@ -179,6 +176,8 @@ void Window::changeScene(SceneType sceneOption)
         data.cameraLookAt = glm::vec3(0, 2, 0);
         data.cameraFov = 20.0f;
         break;
+    case Scene_FinishedCornellBox:
+        maxSamples = 10000.0f;
     case Scene_CornellBox:
         scene = cornellBox();
         data.background = glm::vec3(0.0f);
