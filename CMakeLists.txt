@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 
-project ( Raymarching )
+project ( Raytracing )
 
 set (CMAKE_CXX_STANDARD 17)
 
