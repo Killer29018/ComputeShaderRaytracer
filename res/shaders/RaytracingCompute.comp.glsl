@@ -304,16 +304,30 @@ void rotate(inout Ray ray, in Shape shape)
 
     ray.origin -= shape.position;
 
-    if (rotation.x == 1) {}
+    if (rotation.x == 1)
+    {
+        rotated = rotateAxis(vec2(ray.origin.y, ray.origin.z), sinTheta, cosTheta);
+        ray.origin.yz = rotated;
+
+        rotated = rotateAxis(vec2(ray.direction.y, ray.direction.z), sinTheta, cosTheta);
+        ray.direction.yz = rotated;
+    }
     else if (rotation.y == 1)
     {
         rotated = rotateAxis(vec2(ray.origin.x, ray.origin.z), sinTheta, cosTheta);
-        ray.origin = vec3(rotated.x, ray.origin.y, rotated.y);
+        ray.origin.xz = rotated;
 
         rotated = rotateAxis(vec2(ray.direction.x, ray.direction.z), sinTheta, cosTheta);
-        ray.direction = vec3(rotated.x, ray.direction.y, rotated.y);
+        ray.direction.xz = rotated;
     }
-    else if (rotation.z == 1) {}
+    else if (rotation.z == 1)
+    {
+        rotated = rotateAxis(vec2(ray.origin.x, ray.origin.y), sinTheta, cosTheta);
+        ray.origin.xy = rotated;
+
+        rotated = rotateAxis(vec2(ray.direction.x, ray.direction.y), sinTheta, cosTheta);
+        ray.direction.xy = rotated;
+    }
 
     ray.origin += shape.position;
 }
@@ -330,19 +344,27 @@ void unrotate(inout HitRecord rec, in Shape shape)
 
     if (rotation.x == 1)
     {
+        rotated = unrotateAxis(vec2(rec.point.y, rec.point.z), sinTheta, cosTheta);
+        rec.point.yz = rotated;
 
+        rotated = unrotateAxis(vec2(rec.normal.y, rec.normal.z), sinTheta, cosTheta);
+        rec.normal.yz = rotated;
     }
     else if (rotation.y == 1)
     {
         rotated = unrotateAxis(vec2(rec.point.x, rec.point.z), sinTheta, cosTheta);
-        rec.point = vec3(rotated.x, rec.point.y, rotated.y);
+        rec.point.xz = rotated;
 
         rotated = unrotateAxis(vec2(rec.normal.x, rec.normal.z), sinTheta, cosTheta);
-        rec.normal = vec3(rotated.x, rec.normal.y, rotated.y);
+        rec.normal.xz = rotated;
     }
     else if (rotation.z == 1)
     {
+        rotated = unrotateAxis(vec2(rec.point.x, rec.point.y), sinTheta, cosTheta);
+        rec.point.xy = rotated;
 
+        rotated = unrotateAxis(vec2(rec.normal.x, rec.normal.y), sinTheta, cosTheta);
+        rec.normal.xy = rotated;
     }
 
     rec.point += shape.position;

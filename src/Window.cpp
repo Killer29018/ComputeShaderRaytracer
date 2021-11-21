@@ -347,12 +347,11 @@ Scene Window::cornellBox()
     scene.addShape(XYRect(0, 555, 0, 555, 555, white));
 
     Shape box1 = Cube(glm::vec3(130, 0, 65), glm::vec3(165), white);
-    box1.rotation = glm::vec4(0.0f, 1.0f, 0.0f, -18.0f);
-    // scene.addShape(Cube(glm::vec3(130, 0, 65), glm::vec3(165, 165, 165), white, glm::vec3(0.0, 1.0, 0.0), -18));
+    box1.rotateY(-18.0f);
     scene.addShape(box1);
 
     Shape box2 = Cube(glm::vec3(265, 0, 295), glm::vec3(165, 330, 165), white);
-    box2.rotation = glm::vec4(0.0f, 1.0f, 0.0f, 15.0f);
+    box2.rotateY(15.0f);
     scene.addShape(box2);
 
     return scene;

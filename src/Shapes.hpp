@@ -33,6 +33,10 @@ struct Shape
         extraInfo.y = matType;
         extraInfo.z = materialExtra;
     }
+
+    void rotateX(float angle) { rotation = glm::vec4(1.0f, 0.0f, 0.0f, angle); }
+    void rotateY(float angle) { rotation = glm::vec4(0.0f, 1.0f, 0.0f, angle); }
+    void rotateZ(float angle) { rotation = glm::vec4(0.0f, 0.0f, 1.0f, angle); }
 };
 
 struct Sphere : Shape
@@ -64,5 +68,6 @@ struct Cube : Shape
     Cube(glm::vec3 position, glm::vec3 size, const Material& mat, glm::vec3 rotation = glm::vec3(0.0f), float angle = 0.0f)
         : Shape(Shape_Cube, position, size, mat.materialType, mat.colour, mat.extraInfo, glm::vec4(rotation.x, rotation.y, rotation.z, angle)) {}
 };
+
 
 #endif
