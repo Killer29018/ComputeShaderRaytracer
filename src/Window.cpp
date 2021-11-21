@@ -81,11 +81,11 @@ void Window::init(glm::vec2 windowSize)
     VBO.unbind();
     m_VAO.unbind();
 
-    m_GeneralShader.compilePath("res/shaders/basicVertexShader.glsl", "res/shaders/basicFragmentShader.glsl");
+    m_GeneralShader.compilePath("res/shaders/basicVertexShader.vs.glsl", "res/shaders/basicFragmentShader.fs.glsl");
     m_GeneralShader.bind();
     m_GeneralShader.setUniformInt("u_Texture", 0);
 
-    m_ComputeShader.compilePath("res/shaders/RaytracingCompute.glsl");
+    m_ComputeShader.compilePath("res/shaders/RaytracingCompute.comp.glsl");
 
     createTexture(m_OutputImage, windowSize.x, windowSize.y, 0);
     createTexture(m_DataImage, windowSize.x, windowSize.y, 1);
@@ -346,9 +346,14 @@ Scene Window::cornellBox()
     scene.addShape(XZRect(0, 555, 0, 555, 555, white));
     scene.addShape(XYRect(0, 555, 0, 555, 555, white));
 
-    scene.addShape(Cube(glm::vec3(130, 0, 65), glm::vec3(165, 165, 165), white));
-    scene.addShape(Cube(glm::vec3(265, 0, 295), glm::vec3(165, 330, 165), white));
-    // scene.addShape(Cube(glm::vec3(320, 450, 65), glm::vec3(165, 165, 165), white));
+    Shape box1 = Cube(glm::vec3(130, 0, 65), glm::vec3(165), white);
+    box1.rotation = glm::vec4(0.0f, 1.0f, 0.0f, -18.0f);
+    // scene.addShape(Cube(glm::vec3(130, 0, 65), glm::vec3(165, 165, 165), white, glm::vec3(0.0, 1.0, 0.0), -18));
+    scene.addShape(box1);
+
+    Shape box2 = Cube(glm::vec3(265, 0, 295), glm::vec3(165, 330, 165), white);
+    box2.rotation = glm::vec4(0.0f, 1.0f, 0.0f, 15.0f);
+    scene.addShape(box2);
 
     return scene;
 }

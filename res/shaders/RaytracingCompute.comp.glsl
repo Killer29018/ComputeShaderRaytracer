@@ -8,6 +8,9 @@ struct Shape
     vec3 size;
     vec3 colour;
 
+    // X Y Z Rotation
+    vec4 rotation;
+
     // ShapeType MatType MatExtra
     vec4 extraInfo;
 };
@@ -69,12 +72,20 @@ float lensRadius;
 
 uint seed;
 
-vec3 getPixelColour(in float minT, in float maxT);
-bool worldHit(in Ray r, in float minT, in float maxT, inout HitRecord rec);
+vec3 getPixelColour(in float tMin, in float tMax);
+bool worldHit(in Ray r, in float tMin, in float tMax, inout HitRecord rec);
 
-void setFrontFace(inout HitRecord rec, in Ray ray, in vec3 normal);
-vec3 rayAt(in Ray r, in float t);
-void getRay(inout Ray r, float x, float y);
+bool calculateHit(in Ray ray, in Shape shape, in float tMin, in float tMax, inout HitRecord rec);
+
+// Rotation
+void rotate(inout Ray ray, in Shape shape);
+void unrotate(inout HitRecord rec, in Shape shape);
+
+vec2 rotateAxis(in vec2 values, in float sinTheta, in float cosTheta);
+vec2 unrotateAxis(in vec2 values, in float sinTheta, in float cosTheta);
+
+// Shape
+bool shapeHit(in Ray ray, in Shape shape, in float tMin, in float tMax, inout HitRecord rec);
 
 bool sphereHit(in Ray ray, in vec3 sphereCenter, in float sphereRadius, in float tMin, in float tMax, inout HitRecord rec);
 bool xyRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec);
@@ -87,7 +98,9 @@ bool scatterMetal(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray s
 bool scatterDielectric(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattered);
 bool scatterDiffuseLight(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattered);
 
-vec3 emittedDiffuseLight(in vec3 point);
+void setFrontFace(inout HitRecord rec, in Ray ray, in vec3 normal);
+vec3 rayAt(in Ray r, in float t);
+void getRay(inout Ray r, float x, float y);
 
 uint hash(uint key);
 float rand(inout uint seed);
@@ -241,24 +254,9 @@ bool worldHit(in Ray ray, in float minT, in float maxT, inout HitRecord rec)
 
     for (int i = 0; i < ssbo_SceneData.length(); i++)
     {
-        bool hit = false;
         Shape shape = ssbo_SceneData[i];
-        switch (uint(shape.extraInfo.x))
-        {
-        case 0: // Circle
-            vec3 centre = shape.position;
-            float radius = shape.size.x;
 
-            hit = sphereHit(ray, centre, radius, minT, closest, rec); break;
-        case 1: // XY Rect
-            hit = xyRectHit(ray, shape.position, shape.size, minT, closest, rec); break;
-        case 2: // XZ Rect
-            hit = xzRectHit(ray, shape.position, shape.size, minT, closest, rec); break;
-        case 3: // YZ Rect
-            hit = yzRectHit(ray, shape.position, shape.size, minT, closest, rec); break;
-        case 4: // Cube
-            hit = cubeHit(ray, shape.position, shape.size, minT, closest, rec); break;
-        }
+        bool hit = calculateHit(ray, shape, minT, closest, rec);
 
         if (hit)
         {
@@ -281,24 +279,108 @@ bool worldHit(in Ray ray, in float minT, in float maxT, inout HitRecord rec)
     return hitAnything;
 }
 
-void setFrontFace(inout HitRecord rec, in Ray ray, in vec3 normal)
+bool calculateHit(in Ray ray, in Shape shape, in float tMin, in float tMax, inout HitRecord rec)
 {
-    rec.frontFace = dot(ray.direction, normal) < 0;
-    rec.normal = rec.frontFace ? normal : -normal;
+    bool hit = false;
+
+    Ray currentRay = ray;
+    rotate(currentRay, shape);
+
+    hit = shapeHit(currentRay, shape, tMin, tMax, rec);
+
+    if (hit)
+        unrotate(rec, shape);
+
+    return hit;
 }
 
-vec3 rayAt(in Ray r, in float t)
+void rotate(inout Ray ray, in Shape shape)
 {
-    return r.origin + (t * r.direction);
+    float sinTheta = sin(radians(shape.rotation.w));
+    float cosTheta = cos(radians(shape.rotation.w));
+
+    ivec3 rotation = ivec3(shape.rotation.xyz);
+    vec2 rotated;
+
+    ray.origin -= shape.position;
+
+    if (rotation.x == 1) {}
+    else if (rotation.y == 1)
+    {
+        rotated = rotateAxis(vec2(ray.origin.x, ray.origin.z), sinTheta, cosTheta);
+        ray.origin = vec3(rotated.x, ray.origin.y, rotated.y);
+
+        rotated = rotateAxis(vec2(ray.direction.x, ray.direction.z), sinTheta, cosTheta);
+        ray.direction = vec3(rotated.x, ray.direction.y, rotated.y);
+    }
+    else if (rotation.z == 1) {}
+
+    ray.origin += shape.position;
 }
 
-void getRay(inout Ray ray, float x, float y)
+void unrotate(inout HitRecord rec, in Shape shape)
 {
-    vec3 rd = lensRadius * randInUnitDisc(seed);
-    vec3 offset = u*rd.x + v*rd.y;
+    float sinTheta = sin(radians(shape.rotation.w));
+    float cosTheta = cos(radians(shape.rotation.w));
 
-    ray.origin = ssbo_CameraPos + offset;
-    ray.direction = lowerLeftCorner + (x*horizontal) + (y*vertical) - ssbo_CameraPos - offset;
+    ivec3 rotation = ivec3(shape.rotation.xyz);
+    vec2 rotated;
+
+    rec.point -= shape.position;
+
+    if (rotation.x == 1)
+    {
+
+    }
+    else if (rotation.y == 1)
+    {
+        rotated = unrotateAxis(vec2(rec.point.x, rec.point.z), sinTheta, cosTheta);
+        rec.point = vec3(rotated.x, rec.point.y, rotated.y);
+
+        rotated = unrotateAxis(vec2(rec.normal.x, rec.normal.z), sinTheta, cosTheta);
+        rec.normal = vec3(rotated.x, rec.normal.y, rotated.y);
+    }
+    else if (rotation.z == 1)
+    {
+
+    }
+
+    rec.point += shape.position;
+}
+
+vec2 rotateAxis(in vec2 values, in float sinTheta, in float cosTheta)
+{
+    vec2 new;
+    new.x = cosTheta*values.x - sinTheta*values.y;
+    new.y = sinTheta*values.x + cosTheta*values.y;
+
+    return new;
+}
+
+vec2 unrotateAxis(in vec2 values, in float sinTheta, in float cosTheta)
+{
+    vec2 new;
+    new.x =  cosTheta*values.x + sinTheta*values.y;
+    new.y = -sinTheta*values.x + cosTheta*values.y;
+
+    return new;
+}
+
+bool shapeHit(in Ray ray, in Shape shape, in float tMin, in float tMax, inout HitRecord rec)
+{
+    switch (uint(shape.extraInfo.x))
+    {
+    case 0: // Circle
+        return sphereHit(ray, shape.position, shape.size.x, tMin, tMax, rec); break;
+    case 1: // XY Rect
+        return xyRectHit(ray, shape.position, shape.size, tMin, tMax, rec); break;
+    case 2: // XZ Rect
+        return xzRectHit(ray, shape.position, shape.size, tMin, tMax, rec); break;
+    case 3: // YZ Rect
+        return yzRectHit(ray, shape.position, shape.size, tMin, tMax, rec); break;
+    case 4: // Cube
+        return cubeHit(ray, shape.position, shape.size, tMin, tMax, rec); break;
+    }
 }
 
 bool sphereHit(Ray ray, vec3 sphereCenter, float sphereRadius, float tMin, float tMax, inout HitRecord rec)
@@ -482,6 +564,26 @@ bool scatterDielectric(in Ray ray, inout HitRecord rec, out vec3 attenuation, ou
 bool scatterDiffuseLight(in Ray ray, inout HitRecord rec, out vec3 attenuation, out Ray scattered)
 {
     return false;
+}
+
+void setFrontFace(inout HitRecord rec, in Ray ray, in vec3 normal)
+{
+    rec.frontFace = dot(ray.direction, normal) < 0;
+    rec.normal = rec.frontFace ? normal : -normal;
+}
+
+vec3 rayAt(in Ray r, in float t)
+{
+    return r.origin + (t * r.direction);
+}
+
+void getRay(inout Ray ray, float x, float y)
+{
+    vec3 rd = lensRadius * randInUnitDisc(seed);
+    vec3 offset = u*rd.x + v*rd.y;
+
+    ray.origin = ssbo_CameraPos + offset;
+    ray.direction = lowerLeftCorner + (x*horizontal) + (y*vertical) - ssbo_CameraPos - offset;
 }
 
 uint hash(uint key)

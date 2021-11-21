@@ -20,10 +20,13 @@ struct Shape
     alignas(16) glm::vec3 size;
     alignas(16) glm::vec3 colour;
 
+    // X Y Z Rotation
+    alignas(16) glm::vec4 rotation;
+
     // ShapeType MatType MatExtra Throwaway
     alignas(16) glm::vec4 extraInfo;
 
-    Shape(ShapeType type, glm::vec3 position, glm::vec3 size, MaterialType matType, glm::vec3 colour, float materialExtra)
+    Shape(ShapeType type, glm::vec3 position, glm::vec3 size, MaterialType matType, glm::vec3 colour, float materialExtra, glm::vec4 rotation = glm::vec4(0.0f))
         : position(position), size(size), colour(colour)
     {
         extraInfo.x = type;
@@ -58,8 +61,8 @@ struct YZRect : Shape
 
 struct Cube : Shape
 {
-    Cube(glm::vec3 position, glm::vec3 size, const Material& mat)
-        : Shape(Shape_Cube, position, size, mat.materialType, mat.colour, mat.extraInfo) {}
+    Cube(glm::vec3 position, glm::vec3 size, const Material& mat, glm::vec3 rotation = glm::vec3(0.0f), float angle = 0.0f)
+        : Shape(Shape_Cube, position, size, mat.materialType, mat.colour, mat.extraInfo, glm::vec4(rotation.x, rotation.y, rotation.z, angle)) {}
 };
 
 #endif
