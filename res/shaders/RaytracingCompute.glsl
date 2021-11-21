@@ -80,6 +80,7 @@ bool sphereHit(in Ray ray, in vec3 sphereCenter, in float sphereRadius, in float
 bool xyRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec);
 bool xzRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec);
 bool yzRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec);
+bool cubeHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec);
 
 bool scatterLambertian(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattereed);
 bool scatterMetal(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattereed);
@@ -248,17 +249,15 @@ bool worldHit(in Ray ray, in float minT, in float maxT, inout HitRecord rec)
             vec3 centre = shape.position;
             float radius = shape.size.x;
 
-            hit = sphereHit(ray, centre, radius, minT, closest, rec);
-            break;
+            hit = sphereHit(ray, centre, radius, minT, closest, rec); break;
         case 1: // XY Rect
-            hit = xyRectHit(ray, shape.position, shape.size, minT, closest, rec);
-            break;
+            hit = xyRectHit(ray, shape.position, shape.size, minT, closest, rec); break;
         case 2: // XZ Rect
-            hit = xzRectHit(ray, shape.position, shape.size, minT, closest, rec);
-            break;
+            hit = xzRectHit(ray, shape.position, shape.size, minT, closest, rec); break;
         case 3: // YZ Rect
-            hit = yzRectHit(ray, shape.position, shape.size, minT, closest, rec);
-            break;
+            hit = yzRectHit(ray, shape.position, shape.size, minT, closest, rec); break;
+        case 4: // Cube
+            hit = cubeHit(ray, shape.position, shape.size, minT, closest, rec); break;
         }
 
         if (hit)
@@ -341,7 +340,7 @@ bool xyRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in flo
     float x = ray.origin.x + t*ray.direction.x;
     float y = ray.origin.y + t*ray.direction.y;
 
-    if (x < position.x || x > size.x || y < position.y || y > size.y)
+    if (x < position.x || x > position.x + size.x || y < position.y || y > position.y + size.y)
         return false;
 
     rec.t = t;
@@ -364,7 +363,7 @@ bool xzRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in flo
     float x = ray.origin.x + t*ray.direction.x;
     float z = ray.origin.z + t*ray.direction.z;
 
-    if (x < position.x || x > size.x || z < position.z || z > size.z)
+    if (x < position.x || x > position.x + size.x || z < position.z || z > position.z + size.z)
         return false;
 
     rec.t = t;
@@ -387,7 +386,7 @@ bool yzRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in flo
     float y = ray.origin.y + t*ray.direction.y;
     float z = ray.origin.z + t*ray.direction.z;
 
-    if (y < position.y || y > size.y || z < position.z || z > size.z)
+    if (y < position.y || y > position.y + size.y || z < position.z || z > position.z + size.z)
         return false;
 
     rec.t = t;
@@ -396,6 +395,34 @@ bool yzRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in flo
     setFrontFace(rec, ray, normal);
 
     return true;
+}
+
+bool cubeHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec)
+{
+    bool hitAnything = false;
+    bool hit = false;
+
+    float closest = tMax;
+
+    hit = xyRectHit(ray, position, size, tMin, closest, rec);
+    if (hit) { closest = rec.t; hitAnything = true; }
+
+    hit = xyRectHit(ray, vec3(position.x, position.y, position.z + size.z), size, tMin, closest, rec);
+    if (hit) { closest = rec.t; hitAnything = true; }
+
+    hit = xzRectHit(ray, position, size, tMin, closest, rec);
+    if (hit) { closest = rec.t; hitAnything = true; }
+
+    hit = xzRectHit(ray, vec3(position.x, position.y + size.y, position.z), size, tMin, closest, rec);
+    if (hit) { closest = rec.t; hitAnything = true; }
+
+    hit = yzRectHit(ray, position, size, tMin, closest, rec);
+    if (hit) { closest = rec.t; hitAnything = true; }
+
+    hit = yzRectHit(ray, vec3(position.x + size.x, position.y, position.z), size, tMin, closest, rec);
+    if (hit) { closest = rec.t; hitAnything = true; }
+
+    return hitAnything;
 }
 
 bool scatterLambertian(in Ray ray, inout HitRecord rec, out vec3 attenuation, out Ray scattered)

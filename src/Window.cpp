@@ -85,7 +85,7 @@ void Window::init(glm::vec2 windowSize)
     m_GeneralShader.bind();
     m_GeneralShader.setUniformInt("u_Texture", 0);
 
-    m_ComputeShader.compilePath("res/shaders/BasicCompute.glsl");
+    m_ComputeShader.compilePath("res/shaders/RaytracingCompute.glsl");
 
     createTexture(m_OutputImage, windowSize.x, windowSize.y, 0);
     createTexture(m_DataImage, windowSize.x, windowSize.y, 1);
@@ -323,7 +323,7 @@ Scene Window::simpleLight()
 
     Material light1 = DiffuseLight(glm::vec3(4));
     // scene.addShape(Sphere(glm::vec3(2, 2, -4), 0.5, light1));
-    scene.addShape(XYRect(3, 5, 1, 3, -2, light1));
+    scene.addShape(XYRect(3, 2, 1, 2, -2, light1));
 
     // scene.addShape(Sphere(glm::vec3(0, 7, 0), 2, light1));
 
@@ -341,10 +341,14 @@ Scene Window::cornellBox()
 
     scene.addShape(YZRect(0, 555, 0, 555, 555, green));
     scene.addShape(YZRect(0, 555, 0, 555, 0, red));
-    scene.addShape(XZRect(213, 343, 227, 332, 554, light));
+    scene.addShape(XZRect(213, 130, 227, 105, 554, light));
     scene.addShape(XZRect(0, 555, 0, 555, 0, white));
     scene.addShape(XZRect(0, 555, 0, 555, 555, white));
     scene.addShape(XYRect(0, 555, 0, 555, 555, white));
+
+    scene.addShape(Cube(glm::vec3(130, 0, 65), glm::vec3(165, 165, 165), white));
+    scene.addShape(Cube(glm::vec3(265, 0, 295), glm::vec3(165, 330, 165), white));
+    // scene.addShape(Cube(glm::vec3(320, 450, 65), glm::vec3(165, 165, 165), white));
 
     return scene;
 }
