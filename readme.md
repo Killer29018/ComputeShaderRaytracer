@@ -1,13 +1,23 @@
-# Raymarching
+# Compute Shader Raytracing
 A Compute shader based ray marcher based on the [Ray Tracing in one weekend](https://raytracing.github.io/) book series
+Written in C++ using Opengl for the graphics.
 
+#### Raytracing in one weekend: 3 Spheres
 ![3 Spheres](img/3Sphere.png)
+1280x720 : 100 Samples
+
+#### Raytracing in one weekend: Final Scene
 ![Many Spheres](img/ManySphere.png)
-Both images made with 100 samples with a max depth of 50 with a vertical fov of 20
-Image size of 1280x720
+1280x720 : 100 Samples
 
-![Cornell Box](img/CornellBox.png)
-600x600 Cornell box after 1000 Iterations
-
+#### Lighting Test
 ![Lighting Test](img/LightingTest.png)
-1280x720 Lighting test after 1000 Iterations
+1280x720 : 1000 Samples
+
+#### Unfinished Cornell Box
+![Cornell Box](img/CornellBox.png)
+640x640 : 1000 Samples
+
+#### Cornell Box
+![Cornell Box](img/FinishedCornellBox.png)
+640x640 : 1000 Samples
