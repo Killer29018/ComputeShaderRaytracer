@@ -8,7 +8,8 @@ enum MaterialType
     Mat_Lambertian = 0,
     Mat_Metal = 1,
     Mat_Dielectric = 2,
-    Mat_DiffuseLight = 3
+    Mat_DiffuseLight = 3,
+    Mat_ConstantMedium = 4,
 };
 
 struct Material
@@ -45,6 +46,12 @@ struct DiffuseLight : public Material
 {
     DiffuseLight(glm::vec3 colour)
         : Material(Mat_DiffuseLight, colour, 0.0f) { }
+};
+
+struct ConstantMedium : public Material
+{
+    ConstantMedium(glm::vec3 colour, float density)
+        : Material(Mat_ConstantMedium, colour, density) {}
 };
 
 #endif

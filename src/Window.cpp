@@ -176,8 +176,14 @@ void Window::changeScene(SceneType sceneOption)
         data.cameraLookAt = glm::vec3(0, 2, 0);
         data.cameraFov = 20.0f;
         break;
-    case Scene_FinishedCornellBox:
+    case Scene_CornellSmoke:
+        scene = cornellSmoke();
+        data.background = glm::vec3(0.0f);
+        data.cameraPos = glm::vec3(278, 278, -800);
+        data.cameraLookAt = glm::vec3(278, 278, 0);
+        data.cameraFov = 40.0f;
         maxSamples = 10000.0f;
+        break;
     case Scene_CornellBox:
         scene = cornellBox();
         data.background = glm::vec3(0.0f);
@@ -350,6 +356,35 @@ Scene Window::cornellBox()
     scene.addShape(box1);
 
     Shape box2 = Cube(glm::vec3(265, 0, 295), glm::vec3(165, 330, 165), white);
+    box2.rotateY(15.0f);
+    scene.addShape(box2);
+
+    return scene;
+}
+
+Scene Window::cornellSmoke()
+{
+    Scene scene;
+
+    Material red = Lambertian(glm::vec3(0.65, 0.05, 0.05));
+    Material white = Lambertian(glm::vec3(0.73));
+    Material green = Lambertian(glm::vec3(0.12, 0.45, 0.15));
+    Material light = DiffuseLight(glm::vec3(15));
+
+    scene.addShape(YZRect(0, 555, 0, 555, 555, green));
+    scene.addShape(YZRect(0, 555, 0, 555, 0, red));
+    scene.addShape(XZRect(213, 130, 227, 105, 554, light));
+    scene.addShape(XZRect(0, 555, 0, 555, 0, white));
+    scene.addShape(XZRect(0, 555, 0, 555, 555, white));
+    scene.addShape(XYRect(0, 555, 0, 555, 555, white));
+
+    Material b1 = ConstantMedium(glm::vec3(1.0f), 0.02);
+    Shape box1 = Cube(glm::vec3(130, 0, 65), glm::vec3(165), b1);
+    box1.rotateY(-18.0f);
+    scene.addShape(box1);
+
+    Material b2 = ConstantMedium(glm::vec3(0.0f), 0.01);
+    Shape box2 = Cube(glm::vec3(265, 0, 295), glm::vec3(165, 330, 165), b2);
     box2.rotateY(15.0f);
     scene.addShape(box2);
 

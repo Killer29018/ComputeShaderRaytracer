@@ -11,7 +11,7 @@ struct Shape
     // X Y Z Rotation
     vec4 rotation;
 
-    // ShapeType MatType MatExtra
+    // ShapeType MatType MatExtra ConstantMedium
     vec4 extraInfo;
 };
 
@@ -92,11 +92,13 @@ bool xyRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in flo
 bool xzRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec);
 bool yzRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec);
 bool cubeHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec);
+bool constantMediumHit(in Ray ray, in Shape shape, in float tMin, in float tMax, inout HitRecord rec);
 
 bool scatterLambertian(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattereed);
 bool scatterMetal(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattereed);
 bool scatterDielectric(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattered);
 bool scatterDiffuseLight(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattered);
+bool scatterIsotropic(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattered);
 
 void setFrontFace(inout HitRecord rec, in Ray ray, in vec3 normal);
 vec3 rayAt(in Ray r, in float t);
@@ -137,8 +139,8 @@ void main()
     lensRadius = ssbo_CameraAperture / 2.0;
 
     // Get Pixel Colour
-    float infinite = 1.0/0.0;
-    vec3 finalColour = getPixelColour(0.0001, infinite);
+    float infinity = 1.0/0.0;
+    vec3 finalColour = getPixelColour(0.0001, infinity);
 
     // Get previous summed total
     vec4 previousPx = imageLoad(imgData, pixelCoords);
@@ -201,22 +203,17 @@ vec3 getPixelColour(in float minT, in float maxT)
             switch (tempRec.matType)
             {
             case 0:
-                hit = scatterLambertian(currentRay, tempRec, attenuation, scattered);
-                break;
+                hit = scatterLambertian(currentRay, tempRec, attenuation, scattered); break;
             case 1:
-                hit = scatterMetal(currentRay, tempRec, attenuation, scattered);
-                break;
+                hit = scatterMetal(currentRay, tempRec, attenuation, scattered); break;
             case 2:
-                hit = scatterDielectric(currentRay, tempRec, attenuation, scattered);
-                break;
+                hit = scatterDielectric(currentRay, tempRec, attenuation, scattered); break;
             case 3:
                 emitted = tempRec.mat.albedo;
-                hit = scatterDiffuseLight(currentRay, tempRec, attenuation, scattered);
-                break;
+                hit = scatterDiffuseLight(currentRay, tempRec, attenuation, scattered); break;
+            case 4:
+                hit = scatterIsotropic(currentRay, tempRec, attenuation, scattered); break;
             }
-
-            // colour = tempRec.mat.albedo;
-            // break;
 
             if (hit)
             {
@@ -286,7 +283,10 @@ bool calculateHit(in Ray ray, in Shape shape, in float tMin, in float tMax, inou
     Ray currentRay = ray;
     rotate(currentRay, shape);
 
-    hit = shapeHit(currentRay, shape, tMin, tMax, rec);
+    if (uint(shape.extraInfo.w) == 1) // constant Medium
+        hit = constantMediumHit(currentRay, shape, tMin, tMax, rec);
+    else
+        hit = shapeHit(currentRay, shape, tMin, tMax, rec);
 
     if (hit)
         unrotate(currentRay, rec, shape);
@@ -531,6 +531,38 @@ bool cubeHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float
     return hitAnything;
 }
 
+bool constantMediumHit(in Ray ray, in Shape shape, in float tMin, in float tMax, inout HitRecord rec)
+{
+    float infinity = 1.0/0.0;
+    HitRecord rec1, rec2;
+
+    if (!shapeHit(ray, shape, -infinity, infinity, rec1))
+        return false;
+    if (!shapeHit(ray, shape, rec1.t + 0.0001, infinity, rec2))
+        return false;
+
+    if (rec1.t < tMin) rec1.t = tMin;
+    if (rec2.t > tMax) rec2.t = tMax;
+
+    if (rec1.t >= rec2.t) return false;
+
+    if (rec1.t < 0) rec1.t = 0;
+
+    float distanceInside = (rec2.t - rec1.t) * length(ray.direction);
+    float hitDistance = (-1.0 / shape.extraInfo.z) * log(rand(seed));
+
+    if (hitDistance > distanceInside) return false;
+
+    rec.t = rec1.t + hitDistance / length(ray.direction);
+    rec.point = rayAt(ray, rec.t);
+
+    // Arbitrary
+    rec.normal = vec3(1.0);
+    rec.frontFace = true;
+
+    return true;
+}
+
 bool scatterLambertian(in Ray ray, inout HitRecord rec, out vec3 attenuation, out Ray scattered)
 {
     vec3 scatterDirection = rec.normal + normalize(randInUnitSphere(seed));
@@ -588,6 +620,17 @@ bool scatterDielectric(in Ray ray, inout HitRecord rec, out vec3 attenuation, ou
 bool scatterDiffuseLight(in Ray ray, inout HitRecord rec, out vec3 attenuation, out Ray scattered)
 {
     return false;
+}
+
+bool scatterIsotropic(in Ray ray, inout HitRecord rec, out vec3 attenuation, out Ray scattered)
+{
+    Ray r;
+    r.origin = rec.point;
+    r.direction = randInUnitSphere(seed);
+    scattered = r;
+    attenuation = rec.mat.albedo;
+
+    return true;
 }
 
 void setFrontFace(inout HitRecord rec, in Ray ray, in vec3 normal)

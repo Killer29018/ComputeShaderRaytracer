@@ -5,6 +5,8 @@
 
 #include "Materials.hpp"
 
+#include "iostream"
+
 enum ShapeType
 {
     Shape_Sphere = 0,
@@ -23,7 +25,7 @@ struct Shape
     // X Y Z Rotation
     alignas(16) glm::vec4 rotation;
 
-    // ShapeType MatType MatExtra Throwaway
+    // ShapeType MatType MatExtra constantMedium
     alignas(16) glm::vec4 extraInfo;
 
     Shape(ShapeType type, glm::vec3 position, glm::vec3 size, MaterialType matType, glm::vec3 colour, float materialExtra, glm::vec4 rotation = glm::vec4(0.0f))
@@ -32,6 +34,10 @@ struct Shape
         extraInfo.x = type;
         extraInfo.y = matType;
         extraInfo.z = materialExtra;
+        extraInfo.w = 0.0f;
+
+        if (matType == Mat_ConstantMedium)
+            extraInfo.w = 1.0;
     }
 
     void rotateX(float angle) { rotation = glm::vec4(1.0f, 0.0f, 0.0f, angle); }

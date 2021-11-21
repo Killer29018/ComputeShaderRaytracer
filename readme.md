@@ -20,4 +20,8 @@ Written in C++ using Opengl for the graphics.
 
 #### Cornell Box
 ![Cornell Box](img/FinishedCornellBox.png)
-640x640 : 1000 Samples
+640x640 : 10000 Samples
+
+#### Cornell Box With Smoke
+![Cornell Box](img/CornellBoxWithSmoke.png)
+640x640 : 10000 Samples

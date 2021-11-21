@@ -7,14 +7,11 @@
 #include <iostream>
 #include <string>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "STB\stb_image.h"
-
 #include "Window.hpp"
 
 int main(int argc, char* argv[])
 {
-    SceneType scene = Scene_FinishedCornellBox;
+    SceneType scene = Scene_CornellSmoke;
     if (argc > 1)
     {
         int value = std::stoi(argv[1]);
@@ -32,7 +29,7 @@ int main(int argc, char* argv[])
 
     switch (scene)
     {
-    case Scene_FinishedCornellBox:
+    case Scene_CornellSmoke:
     case Scene_CornellBox:
         aspectRatio = 1.0f;
         screenWidth = 640;
