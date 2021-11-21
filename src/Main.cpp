@@ -11,11 +11,11 @@
 
 int main(int argc, char* argv[])
 {
-    SceneType scene = Scene_CornellSmoke;
+    SceneType scene = Scene_RandomSpheres;
     if (argc > 1)
     {
         int value = std::stoi(argv[1]);
-        if (value < 0 || value > 2)
+        if (value < minScene || value > maxScene)
         {
             std::cerr << "Invalid Range\n";
             return -1;
@@ -24,23 +24,13 @@ int main(int argc, char* argv[])
         scene = (SceneType)value;
     }
 
-    float aspectRatio = 16.0 / 9.0;
-    float screenWidth = 1280;
+    const float screenWidth = 1280;
+    const float screenHeight = 720;
 
-    switch (scene)
-    {
-    case Scene_CornellSmoke:
-    case Scene_CornellBox:
-        aspectRatio = 1.0f;
-        screenWidth = 640;
-    }
+    Window::setScreenSize({ screenWidth, screenHeight });
 
-    float screenHeight = screenWidth / aspectRatio;
-
-    Window::aspectRatio = aspectRatio;
-
-    Window::init({ screenWidth, screenHeight });
-    Window::changeScene(scene);
+    Window::changeScene(scene, true);
+    Window::init();
     Window::uploadDataToCompute();
     Window::run();
 

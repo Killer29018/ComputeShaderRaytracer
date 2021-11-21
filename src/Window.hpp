@@ -17,6 +17,9 @@ enum SceneType
     Scene_CornellSmoke = 3,
 };
 
+constexpr static const int minScene = 0;
+constexpr static const int maxScene = 3;
+
 class Window
 {
 public:
@@ -43,14 +46,16 @@ private:
     static unsigned int m_DataImage;
 
     static float m_SampleCount;
+    static bool m_Initialised;
 public:
-    static void init(glm::vec2 windowSize);
+    static void init();
     static void processKeys();
 
     static void resetData();
+    static void setScreenSize(glm::vec2 windowSize);
 
     static void run();
-    static void changeScene(SceneType scene);
+    static void changeScene(SceneType scene, bool changeScreenSize = false);
     static void uploadDataToCompute();
 
     static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);

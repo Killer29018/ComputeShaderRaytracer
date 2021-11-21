@@ -6,7 +6,7 @@ GLFWwindow* Window::window;
 KRE::Camera Window::camera({0, 0});
 ConstantData Window::data;
 Scene Window::scene;
-float Window::aspectRatio = 1.0;
+float Window::aspectRatio = 16.0 / 9.0;
 float Window::maxSamples = 1000.0f;
 
 KRE::ComputeShader Window::m_ComputeShader;
@@ -20,11 +20,10 @@ unsigned int Window::m_OutputImage;
 unsigned int Window::m_DataImage;
 
 float Window::m_SampleCount = 0.0f;
+bool Window::m_Initialised = false;
 
-void Window::init(glm::vec2 windowSize)
+void Window::init()
 {
-    m_WindowSize = windowSize;
-
     initGLFW();
 
     glfwSwapInterval(1);
@@ -46,7 +45,7 @@ void Window::init(glm::vec2 windowSize)
 
     srand(time(0));
 
-    camera = KRE::Camera(windowSize,
+    camera = KRE::Camera(m_WindowSize,
     KRE::CameraPerspective::PERSPECTIVE,
     KRE::CameraMovementTypes::LOCKED_PERSPECTIVE);
 
@@ -87,13 +86,14 @@ void Window::init(glm::vec2 windowSize)
 
     m_ComputeShader.compilePath("res/shaders/RaytracingCompute.comp.glsl");
 
-    createTexture(m_OutputImage, windowSize.x, windowSize.y, 0);
-    createTexture(m_DataImage, windowSize.x, windowSize.y, 1);
+    createTexture(m_OutputImage, m_WindowSize.x, m_WindowSize.y, 0);
+    createTexture(m_DataImage, m_WindowSize.x, m_WindowSize.y, 1);
 
     glGenBuffers(1, &m_SceneSSBO);
     glGenBuffers(1, &m_DataSSBO);
 
-    resetData();
+    // resetData();
+    m_Initialised = true;
 }
 
 void Window::processKeys()
@@ -114,6 +114,8 @@ void Window::resetData()
     data.maxDepth = 10;
     data.aspectRatio = aspectRatio;
 }
+
+void Window::setScreenSize(glm::vec2 windowSize) { m_WindowSize = windowSize; }
 
 void Window::run()
 {
@@ -158,8 +160,10 @@ void Window::run()
     }
 }
 
-void Window::changeScene(SceneType sceneOption)
+void Window::changeScene(SceneType sceneOption, bool changeScreenSize)
 {
+    if (!m_Initialised) resetData();
+
     switch(sceneOption)
     {
     case Scene_RandomSpheres:
@@ -183,14 +187,27 @@ void Window::changeScene(SceneType sceneOption)
         data.cameraLookAt = glm::vec3(278, 278, 0);
         data.cameraFov = 40.0f;
         maxSamples = 10000.0f;
+
+        if (changeScreenSize)
+        {
+            data.aspectRatio = 1.0f;
+            m_WindowSize = glm::vec2(640, 640);
+        }
+
         break;
     case Scene_CornellBox:
         scene = cornellBox();
         data.background = glm::vec3(0.0f);
-        // data.aspectRatio = 1.0f;
         data.cameraPos = glm::vec3(278, 278, -800);
         data.cameraLookAt = glm::vec3(278, 278, 0);
         data.cameraFov = 40.0f;
+
+        if (changeScreenSize)
+        {
+            data.aspectRatio = 1.0f;
+            m_WindowSize = glm::vec2(640, 640);
+        }
+
         break;
     default:
         data.background = glm::vec3(0.0f);
