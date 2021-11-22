@@ -11,7 +11,7 @@
 
 int main(int argc, char* argv[])
 {
-    SceneType scene = Scene_RandomSpheres;
+    SceneType scene = Scene_Lighting;
     if (argc > 1)
     {
         int value = std::stoi(argv[1]);

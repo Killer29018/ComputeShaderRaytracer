@@ -21,3 +21,6 @@ add_subdirectory(STB)
 # KRE
 set (KRE_BUILD_STATIC_LIBRARY ON CACHE BOOL "" FORCE)
 add_subdirectory(KRE)
+
+# Imgui
+add_subdirectory(Imgui)

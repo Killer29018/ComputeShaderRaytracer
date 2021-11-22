@@ -9,6 +9,10 @@
 #include "Scene.hpp"
 #include "Data.hpp"
 
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 enum SceneType
 {
     Scene_RandomSpheres = 0,
@@ -47,6 +51,8 @@ private:
 
     static float m_SampleCount;
     static bool m_Initialised;
+
+    static ImGuiIO* io;
 public:
     static void init();
     static void processKeys();

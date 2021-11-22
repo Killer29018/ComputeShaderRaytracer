@@ -46,6 +46,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${linker} PUBLIC
     glm::glm
     stb
     glfw
+    Imgui
 
     KRE
 )

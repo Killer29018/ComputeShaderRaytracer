@@ -22,6 +22,8 @@ unsigned int Window::m_DataImage;
 float Window::m_SampleCount = 0.0f;
 bool Window::m_Initialised = false;
 
+ImGuiIO* Window::io = nullptr;
+
 void Window::init()
 {
     initGLFW();
@@ -92,6 +94,15 @@ void Window::init()
     glGenBuffers(1, &m_SceneSSBO);
     glGenBuffers(1, &m_DataSSBO);
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    io = &ImGui::GetIO(); (void)io;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 430");
+
     // resetData();
     m_Initialised = true;
 }
@@ -121,6 +132,13 @@ void Window::run()
 {
     while (!glfwWindowShouldClose(window))
     {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        bool showDemoWindow = true;
+        ImGui::ShowDemoWindow(&showDemoWindow);
+
         KRE::Clock::tick();
 
         if (!(m_SampleCount >= maxSamples))
@@ -154,6 +172,12 @@ void Window::run()
 
         const unsigned int INDICES_COUNT = 6;
         glDrawElements(GL_TRIANGLES, INDICES_COUNT, GL_UNSIGNED_INT, NULL);
+
+        ImGui::Render();
+        int displayW, displayH;
+        glfwGetFramebufferSize(window, &displayW, &displayH);
+        glViewport(0, 0, displayW, displayH);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
         glfwPollEvents();
