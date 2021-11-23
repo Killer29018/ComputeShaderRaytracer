@@ -1,5 +1,7 @@
 #include "Window.hpp"
 
+#include "imgui.h"
+
 #include <glm/gtc/random.hpp>
 
 GLFWwindow* Window::window;
@@ -97,11 +99,21 @@ void Window::init()
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     io = &ImGui::GetIO(); (void)io;
+    io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    // io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
     ImGui::StyleColorsDark();
 
+    // ImGuiStyle& style = ImGui::GetStyle();
+    // if (io->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    // {
+    //     style.WindowRounding = 0.0f;
+    //     style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    // }
+
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 430");
+    ImGui_ImplOpenGL3_Init("#version 150");
 
     // resetData();
     m_Initialised = true;
@@ -178,6 +190,14 @@ void Window::run()
         glfwGetFramebufferSize(window, &displayW, &displayH);
         glViewport(0, 0, displayW, displayH);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        // if (io->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        // {
+        //     GLFWwindow* backupContext = glfwGetCurrentContext();
+        //     ImGui::UpdatePlatformWindows();
+        //     ImGui::RenderPlatformWindowsDefault();
+        //     glfwMakeContextCurrent(backupContext);
+        // }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
