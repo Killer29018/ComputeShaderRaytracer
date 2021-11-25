@@ -2,7 +2,12 @@ cmake_minimum_required(VERSION 3.18)
 
 project (Imgui)
 
-file (GLOB IMGUI_INCLUDE CONFIGURE_DEPENDS "*.cpp" "backends/*.cpp")
+file (GLOB IMGUI_INCLUDE CONFIGURE_DEPENDS 
+    "Imgui/*.cpp"
+    "Imgui/Backends/*.cpp"
+    "Imgui/*.h"
+    "Imgui/Backends/*.h"
+)
 
 find_package(OpenGL REQUIRED)
 
@@ -10,9 +15,8 @@ add_library(Imgui STATIC ${IMGUI_INCLUDE})
 
 target_include_directories(Imgui
     PUBLIC
-    "/"
-    "backends/"
-    "${CMAKE_CURRENT_BINARY_DIR}"
+    "Imgui"
+    "Imgui/Backends/"
 )
 
 set (linker "")

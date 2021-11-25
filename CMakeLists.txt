@@ -31,7 +31,7 @@ endif ()
 file (GLOB_RECURSE cppFiles CONFIGURE_DEPENDS "src/*.cpp")
 add_executable(${PROJECT_NAME} ${cppFiles})
 
-# Add SubDirectories
+# Add Subdirectories
 add_subdirectory(vendor)
 
 # Add libraries and include directories
@@ -44,16 +44,16 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${linker} PUBLIC
     glad
     OpenGL::GL
     glm::glm
-    stb
     glfw
+    stb
     Imgui
 
     KRE
 )
 
-# Copy Res Folder
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_SOURCE_DIR}/res"
-    "${EXECUTABLE_OUTPUT_PATH}/res"
-)
+# # Copy Res Folder
+# add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy_directory
+#     "${CMAKE_SOURCE_DIR}/res"
+#     "${EXECUTABLE_OUTPUT_PATH}/res"
+# )

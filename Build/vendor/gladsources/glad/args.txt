@@ -1,0 +1,1 @@
+--out-path /home/killer29018/Files/Coding/C++/ComputeShaderRaytracer/Build/vendor/gladsources/glad --api gl:core=4.6 c

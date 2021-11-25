@@ -1,8 +1,8 @@
-#include <Glad/gl.h>
+#include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
 #include <KRE/KRE.hpp>
-#include <GLM/glm.hpp>
+#include <glm/glm.hpp>
 
 #include <iostream>
 #include <string>
