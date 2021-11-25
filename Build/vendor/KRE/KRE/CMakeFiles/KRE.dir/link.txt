@@ -1,2 +1,0 @@
-/usr/bin/ar qc libKRE.a CMakeFiles/KRE.dir/src/Classes/Camera.cpp.o CMakeFiles/KRE.dir/src/Classes/ComputeShader.cpp.o CMakeFiles/KRE.dir/src/Classes/Shader.cpp.o CMakeFiles/KRE.dir/src/Classes/Texture.cpp.o CMakeFiles/KRE.dir/src/Common/Indices.cpp.o CMakeFiles/KRE.dir/src/Common/Vertices.cpp.o CMakeFiles/KRE.dir/src/Objects/ElementArray.cpp.o CMakeFiles/KRE.dir/src/Objects/VertexArray.cpp.o CMakeFiles/KRE.dir/src/Objects/VertexBuffer.cpp.o CMakeFiles/KRE.dir/src/System/Clock.cpp.o CMakeFiles/KRE.dir/src/System/Keyboard.cpp.o
-/usr/bin/ranlib libKRE.a
