@@ -5,8 +5,6 @@ Scene Application::m_Scene;
 glm::vec2 Application::m_WindowSize;
 KRE::Camera Application::m_Camera({ 0.0f, 0.0f });
 
-ImGuiIO* Application::m_io;
-
 void Application::init(glm::vec2 windowSize)
 {
     m_WindowSize = windowSize;
@@ -36,38 +34,25 @@ void Application::init(glm::vec2 windowSize)
 
     srand(time(0));
 
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    m_io = &ImGui::GetIO(); (void)m_io;
-    m_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    m_io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-    ImGui::StyleColorsDark();
-
-    ImGui_ImplGlfw_InitForOpenGL(m_Window.window, true);
-    ImGui_ImplOpenGL3_Init("#version 150");
+    ImguiWindowManager::init(m_Window.window);
 }
 
 void Application::run()
 {
     while(!glfwWindowShouldClose(m_Window.window))
     {
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+        KRE::Clock::tick();
+
+        ImguiWindowManager::preRender();
 
         bool showDemoWindow = true;
         ImGui::ShowDemoWindow(&showDemoWindow);
 
-        KRE::Clock::tick();
-
         m_Scene.render();
 
-        ImGui::Render();
-        int displayW, displayH;
-        glfwGetFramebufferSize(m_Window.window, &displayW, &displayH);
-        glViewport(0, 0, displayW, displayH);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        ImguiWindowManager::render();
+
+        ImguiWindowManager::postRender();
 
         glfwSwapBuffers(m_Window.window);
         glfwPollEvents();

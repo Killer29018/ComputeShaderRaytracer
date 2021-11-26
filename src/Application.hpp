@@ -6,12 +6,9 @@
 
 #include "Window.hpp"
 #include "Scene.hpp"
+#include "ImguiWindowManager.hpp"
 
 #include "KRE/KRE.hpp"
-
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
 
 class Application
 {
@@ -21,7 +18,6 @@ private:
     static glm::vec2 m_WindowSize;
 
     static KRE::Camera m_Camera;
-    static ImGuiIO* m_io;
 public:
     static void init(glm::vec2 windowSize);
     static void run();
