@@ -28,7 +28,7 @@ class Scene
 public:
 private:
     KRE::Camera* m_Camera;
-    glm::vec2* m_WindowSize;
+    glm::vec2 m_WindowSize;
 
     std::vector<Shape> m_Scene;
 
@@ -52,7 +52,7 @@ public:
     Scene() = default;
     ~Scene() = default;
 
-    void init(KRE::Camera* camera, glm::vec2* windowSize);
+    void init(KRE::Camera* camera, glm::vec2& windowSize);
 
     void render();
     void changeScene(SceneType scene);

@@ -2,7 +2,7 @@
 
 #include <glm/gtc/random.hpp>
 
-void Scene::init(KRE::Camera* camera, glm::vec2* windowSize)
+void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
 {
     m_Camera = camera;
     m_WindowSize = windowSize;
@@ -33,7 +33,7 @@ void Scene::render()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, m_DataImage);
 
-        glDispatchCompute(m_WindowSize->x / localWorkGroupSize, m_WindowSize->y / localWorkGroupSize, 1);
+        glDispatchCompute(m_WindowSize.x / localWorkGroupSize, m_WindowSize.y / localWorkGroupSize, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
         m_SampleCount += 1.0f;
         std::cout << "\r" << "Samples : " << (int)m_SampleCount;
@@ -148,7 +148,6 @@ void Scene::setupVAO()
     m_VAO.init();
     KRE::VertexBuffer VBO(true);
     KRE::ElementArray EBO(true);
-
     m_VAO.bind();
     VBO.bind();
 
@@ -172,8 +171,8 @@ void Scene::setupShaders()
 
     m_ComputeShader.compilePath("res/shaders/RaytracingCompute.comp.glsl");
 
-    createTexture(m_OutputImage, m_WindowSize->x, m_WindowSize->y, 0);
-    createTexture(m_DataImage, m_WindowSize->x, m_WindowSize->y, 1);
+    createTexture(m_OutputImage, m_WindowSize.x, m_WindowSize.y, 0);
+    createTexture(m_DataImage, m_WindowSize.x, m_WindowSize.y, 1);
 
     glGenBuffers(1, &m_SceneSSBO);
     glGenBuffers(1, &m_DataSSBO);
@@ -190,7 +189,7 @@ void Scene::resetData()
     m_Data.cameraFov = 40.0f;
     m_Data.cameraAperture = 0.0;
     m_Data.maxDepth = 10;
-    m_Data.aspectRatio = m_WindowSize->x / m_WindowSize->y;
+    m_Data.aspectRatio = m_WindowSize.x / m_WindowSize.y;
 }
 
 void Scene::randomScene()
