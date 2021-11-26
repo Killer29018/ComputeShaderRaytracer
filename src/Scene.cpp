@@ -12,7 +12,7 @@ void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
     resetData();
 }
 
-void Scene::render()
+void Scene::renderImgui()
 {
     if (m_Updated)
     {

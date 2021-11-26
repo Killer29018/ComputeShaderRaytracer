@@ -16,7 +16,7 @@ class ImguiWindowManager
 public:
     static ImGuiIO* io;
 private:
-    static std::vector<ImguiWindow> m_Windows;
+    static std::vector<ImguiWindow*> m_Windows;
     static GLFWwindow* m_Window;
 public:
     static void init(GLFWwindow* window);

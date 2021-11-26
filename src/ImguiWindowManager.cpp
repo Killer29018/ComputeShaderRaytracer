@@ -2,7 +2,7 @@
 
 ImGuiIO* ImguiWindowManager::io;
 
-std::vector<ImguiWindow> ImguiWindowManager::m_Windows;
+std::vector<ImguiWindow*> ImguiWindowManager::m_Windows;
 GLFWwindow* ImguiWindowManager::m_Window;
 
 void ImguiWindowManager::init(GLFWwindow* window)
@@ -25,7 +25,7 @@ void ImguiWindowManager::init(GLFWwindow* window)
 
 void ImguiWindowManager::addWindow(ImguiWindow& window)
 {
-    m_Windows.emplace_back(window);
+    m_Windows.push_back(&window);
 }
 
 void ImguiWindowManager::preRender()
@@ -37,6 +37,10 @@ void ImguiWindowManager::preRender()
 
 void ImguiWindowManager::render()
 {
+    for (int i = 0; i < m_Windows.size(); i++)
+    {
+        m_Windows[i]->renderImgui();
+    }
 }
 
 void ImguiWindowManager::postRender()

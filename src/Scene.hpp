@@ -12,6 +12,8 @@
 
 #include <KRE/KRE.hpp>
 
+#include "ImguiWindow.hpp"
+
 enum SceneType
 {
     Scene_RandomSpheres = 0,
@@ -23,7 +25,7 @@ enum SceneType
 constexpr static const int minScene = 0;
 constexpr static const int maxScene = 3;
 
-class Scene
+class Scene : public ImguiWindow
 {
 public:
 private:
@@ -54,7 +56,7 @@ public:
 
     void init(KRE::Camera* camera, glm::vec2& windowSize);
 
-    void render();
+    void renderImgui();
     void changeScene(SceneType scene);
 
     void addShape(const Shape& shape);

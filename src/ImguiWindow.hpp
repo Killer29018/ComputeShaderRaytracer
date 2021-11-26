@@ -7,7 +7,7 @@ public:
     ImguiWindow() = default;
     virtual ~ImguiWindow() {}
 
-    virtual void render() {}
+    virtual void renderImgui() {}
 private:
 };
 

@@ -35,6 +35,8 @@ void Application::init(glm::vec2 windowSize)
     srand(time(0));
 
     ImguiWindowManager::init(m_Window.window);
+
+    ImguiWindowManager::addWindow(m_Scene);
 }
 
 void Application::run()
@@ -47,8 +49,6 @@ void Application::run()
 
         bool showDemoWindow = true;
         ImGui::ShowDemoWindow(&showDemoWindow);
-
-        m_Scene.render();
 
         ImguiWindowManager::render();
 
