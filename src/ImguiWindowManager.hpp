@@ -29,6 +29,9 @@ public:
 private:
     ImguiWindowManager() = default;
     ~ImguiWindowManager() = default;
+
+    static void showDockspace(bool* open);
+    static void setupStyle();
 };
 
 #endif

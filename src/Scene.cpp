@@ -14,43 +14,9 @@ void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
 
 void Scene::renderImgui()
 {
-    if (m_Updated)
-    {
-        uploadDataToCompute();
-        m_Updated = false;
-    }
-
-    if (!(m_SampleCount >= m_MaxSamples))
-    {
-        int localWorkGroupSize = 16;
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_SceneSSBO);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_DataSSBO);
-        m_ComputeShader.bind();
-        m_ComputeShader.setUniformFloat("u_SampleCount", m_SampleCount);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, m_OutputImage);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, m_DataImage);
-
-        glDispatchCompute(m_WindowSize.x / localWorkGroupSize, m_WindowSize.y / localWorkGroupSize, 1);
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-        m_SampleCount += 1.0f;
-        std::cout << "\r" << "Samples : " << (int)m_SampleCount;
-    }
-
-
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_OutputImage);
-
-    m_VAO.bind();
-    m_GeneralShader.bind();
-
-    constexpr unsigned int INDICES_COUNT = 6;
-    glDrawElements(GL_TRIANGLES, INDICES_COUNT, GL_UNSIGNED_INT, NULL);
+    renderCompute();
+    renderScene();
+    renderImguiData();
 }
 
 void Scene::changeScene(SceneType scene)
@@ -190,6 +156,71 @@ void Scene::resetData()
     m_Data.cameraAperture = 0.0;
     m_Data.maxDepth = 10;
     m_Data.aspectRatio = m_WindowSize.x / m_WindowSize.y;
+}
+
+void Scene::renderCompute()
+{
+    if (m_Updated)
+    {
+        uploadDataToCompute();
+        m_Updated = false;
+    }
+
+    if (!(m_SampleCount >= m_MaxSamples))
+    {
+        int localWorkGroupSize = 16;
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_SceneSSBO);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_DataSSBO);
+        m_ComputeShader.bind();
+        m_ComputeShader.setUniformFloat("u_SampleCount", m_SampleCount);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, m_OutputImage);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, m_DataImage);
+
+        glDispatchCompute(m_WindowSize.x / localWorkGroupSize, m_WindowSize.y / localWorkGroupSize, 1);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        m_SampleCount += 1.0f;
+    }
+}
+
+void Scene::renderScene()
+{
+    if (ImGui::Begin("Scene"))
+    {
+        ImGui::BeginChild("SceneRender");
+
+        ImVec2 wSize = ImGui::GetWindowSize();
+
+        ImGui::Image((ImTextureID)m_OutputImage, wSize, ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::EndChild();
+    }
+    ImGui::End();
+}
+
+void Scene::renderImguiData()
+{
+    static int quantity = 0.0f;
+    static float currentAvgFPS = 0.0f;
+
+    quantity++;
+    currentAvgFPS += (KRE::Clock::deltaTime - currentAvgFPS)/(float)quantity;
+
+    if (ImGui::Begin("Data"))
+    {
+        ImGui::Text("FPS: %f", (1.0f / KRE::Clock::deltaTime));
+        ImGui::Text("AVG FPS: %f", 1.0f / currentAvgFPS);
+
+        ImGui::Text("Sample Count: %i", (int)m_SampleCount);
+
+        ImGui::Text("Max Samples:");
+        ImGui::SliderFloat("###MaxSamples", &m_MaxSamples, 100, 20000, "%0.0f");
+
+        ImGui::Text("Object Count: %li", m_Scene.size());
+    }
+    ImGui::End();
+
 }
 
 void Scene::randomScene()

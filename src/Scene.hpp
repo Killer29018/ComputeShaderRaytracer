@@ -47,7 +47,7 @@ private:
     unsigned int m_DataImage;
 
     float m_SampleCount;
-    float m_MaxSamples = 10000.0f;
+    float m_MaxSamples = 1000.0f;
 
     bool m_Updated = false;
 public:
@@ -69,6 +69,10 @@ private:
     void setupShaders();
 
     void resetData();
+
+    void renderCompute();
+    void renderScene();
+    void renderImguiData();
 
     void randomScene();
     void simpleLight();
