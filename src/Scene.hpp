@@ -49,12 +49,17 @@ private:
     float m_SampleCount;
     float m_MaxSamples = 1000.0f;
 
+    unsigned int m_TextureWidth = 960;
+    unsigned int m_TextureHeight = 540;
+
     bool m_Updated = false;
 public:
     Scene() = default;
     ~Scene() = default;
 
     void init(KRE::Camera* camera, glm::vec2& windowSize);
+
+    void setScreenSize(glm::vec2 windowSize);
 
     void renderImgui();
     void changeScene(SceneType scene);

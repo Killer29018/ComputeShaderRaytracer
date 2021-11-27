@@ -21,6 +21,9 @@ private:
 public:
     static void init(glm::vec2 windowSize);
     static void run();
+
+    static void GLFWKeyCallback(GLFWwindow* window, int key, int scanmode, int action, int mod);
+    static void GLFWResizeCallback(GLFWwindow* window, int width, int height);
 private:
     Application() = default;
 };

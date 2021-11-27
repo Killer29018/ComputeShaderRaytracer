@@ -19,8 +19,6 @@ public:
     void processKeys();
 
     void setScreenSize(glm::vec2 windowSize);
-
-    static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 private:
     void initGLFW();
 };

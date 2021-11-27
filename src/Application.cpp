@@ -23,7 +23,7 @@ void Application::init(glm::vec2 windowSize)
         exit(-1);
     }
 
-    std::cout << "Loaded OpenGL " << GLAD_VERSION_MAJOR(version) << GLAD_VERSION_MINOR(version) << "\n";
+    std::cout << "Loaded OpenGL " << GLAD_VERSION_MAJOR(version) << "." << GLAD_VERSION_MINOR(version) << "\n";
 
     glViewport(0, 0, m_WindowSize.x, m_WindowSize.y);
     glEnable(GL_BLEND);
@@ -57,4 +57,27 @@ void Application::run()
         glfwSwapBuffers(m_Window.window);
         glfwPollEvents();
     }
+}
+
+void Application::GLFWKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(m_Window.window, true);
+    }
+
+    switch (action)
+    {
+    case GLFW_PRESS: KRE::Keyboard::pressKey(key); break;
+    case GLFW_RELEASE: KRE::Keyboard::unpressKey(key); break;
+    }
+}
+
+void Application::GLFWResizeCallback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+
+    m_WindowSize = glm::vec2(width, height);
+    m_Window.setScreenSize(m_WindowSize);
+    m_Scene.setScreenSize(m_WindowSize);
 }

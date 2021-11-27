@@ -12,6 +12,15 @@ void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
     resetData();
 }
 
+void Scene::setScreenSize(glm::vec2 windowSize)
+{
+    m_WindowSize = windowSize;
+
+    // m_Data.aspectRatio = m_WindowSize.x / m_WindowSize.y;
+    m_Data.aspectRatio = 16.0/9.0;
+    m_Updated = true;
+}
+
 void Scene::renderImgui()
 {
     renderCompute();
@@ -137,8 +146,8 @@ void Scene::setupShaders()
 
     m_ComputeShader.compilePath("res/shaders/RaytracingCompute.comp.glsl");
 
-    createTexture(m_OutputImage, m_WindowSize.x, m_WindowSize.y, 0);
-    createTexture(m_DataImage, m_WindowSize.x, m_WindowSize.y, 1);
+    createTexture(m_OutputImage, m_TextureWidth, m_TextureHeight, 0);
+    createTexture(m_DataImage, m_TextureWidth, m_TextureHeight, 1);
 
     glGenBuffers(1, &m_SceneSSBO);
     glGenBuffers(1, &m_DataSSBO);
@@ -155,7 +164,7 @@ void Scene::resetData()
     m_Data.cameraFov = 40.0f;
     m_Data.cameraAperture = 0.0;
     m_Data.maxDepth = 10;
-    m_Data.aspectRatio = m_WindowSize.x / m_WindowSize.y;
+    m_Data.aspectRatio = 16.0/9.0;
 }
 
 void Scene::renderCompute()
