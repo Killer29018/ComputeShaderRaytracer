@@ -44,7 +44,8 @@ void SceneLoader::loadData()
     root = data["CameraLookAt"];
     m_Data.cameraLookAt = getVec3(root);
 
-    m_Data.cameraUp = glm::vec3(0.0, 1.0, 0.0);
+    root = data["CameraUp"];
+    m_Data.cameraUp = getVec3(root);
 
     root = data["Background"];
     m_Data.background = getVec3(root);
@@ -71,16 +72,15 @@ void SceneLoader::loadShapes()
         const char* matType = shape["MaterialType"].asCString();
         s.extraInfo[1] = (float)getMaterialType(matType);
 
-        float matExtra = shape["MaterialExtra"].asFloat();
-        s.extraInfo[2] = matExtra;
+        s.extraInfo[2] = shape["MaterialExtra"].asFloat();
 
-        s.extraInfo[3] = (float)(s.extraInfo[1] == Mat_ConstantMedium);
+        s.extraInfo[3] = (s.extraInfo[1] == Mat_ConstantMedium);
 
         s.position = getVec3(shape["Position"]);
         s.size = getVec3(shape["Size"]);
         s.colour = getVec3(shape["Colour"]);
 
-        float angle = shape["EnableRotation"].asFloat();
+        float angle = shape["Angle"].asFloat();
         glm::vec3 rotation = getVec3(shape["Rotation"]);
         s.rotation = glm::vec4(rotation.x, rotation.y, rotation.z, angle);
 

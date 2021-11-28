@@ -1,0 +1,55 @@
+; All possible inputs for a scene json value
+; If no value is entered it is defaulted to 0
+
+;; Data Section
+CameraPosition: [ X, Y, Z ]
+CameraLookAt: [ X, Y, Z ]
+CameraUp: [ X, Y, Z ]
+Background: [ R, G, B ]
+CameraViewDist: (float)
+CameraFocusDist: (float)
+CameraFOV: (float)
+CameraAperture: (float)
+CameraMaxDepth: (uint)
+
+;; Shapes
+ShapeType: 
+    SPHERE
+    XYRECT
+    XZRECT
+    YZRECT
+    CUBE
+MaterialType:
+    LAMBERTIAN
+    METAL
+    DIELECTRIC
+    DIFFUSE_LIGHT
+    CONSTANT_MEDIUM
+MaterialExtra: (float)
+    ; Dependent on What the Material Type is to what it affects
+    LAMBERTIAN: Nothing
+    METAL: Fuzziness,
+    DIELECTRIC: Index of Refraction
+    DIFFUSE_LIGHT: NOTHING
+    CONSTANT_MEDIUM: Density
+Position: [ X, Y, Z ]
+Size: [ X, Y, Z]
+Colour: [ R, G, B ]
+Angle: (float)
+Rotation: [ X, Y, Z]
+    ; Can either be
+    [ 1, 0, 0]: For rotation in X axis
+    [ 0, 1, 0]; For rotation in Y axis
+    [ 0, 0, 1]; For rotation in Z axis
+    ; If not specified no rotation is calculated
+
+;; If either XYRECT, XZRECT or YZRECT the position and size affect differnt things
+XYRECT
+    Position: [ X, Y, Z offset ]
+    Size: [ X size, Y size, nothing ]
+XZRECT
+    Position: [ X, Y offset, Z ]
+    Size: [ X size, nothing, Z size ]
+YZRECT
+    Position: [ X offset, Y, Z ]
+    Size: [ nothing, y size, Z size ]

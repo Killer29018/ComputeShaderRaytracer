@@ -1,0 +1,85 @@
+{
+    "Data": {
+        "CameraPosition": [ 278.0, 278.0, -800.0 ],
+        "CameraLookAt": [ 278.0, 278.0, 0.0 ],
+        "CameraUp": [ 0.0, 1.0, 0.0 ],
+        "CameraViewDist": 1.0,
+        "CameraFocusDist": 10.0,
+        "CameraFOV": 40.0,
+        "CameraAperture": 0.0,
+        "CameraMaxDepth": 10
+    },
+
+    "Shapes": [
+        {
+            "ShapeType": "YZRECT",
+            "MaterialType": "LAMBERTIAN",
+
+            "Position": [ 555, 0, 0 ],
+            "Size": [ 0, 555, 555 ],
+            "Colour": [ 0.12, 0.45, 0.15 ]
+        },
+        {
+            "ShapeType": "YZRECT",
+            "MaterialType": "LAMBERTIAN",
+
+            "Position": [ 0, 0, 0 ],
+            "Size": [ 0, 555, 555 ],
+            "Colour": [ 0.65, 0.05, 0.05 ]
+        },
+        {
+            "ShapeType": "XZRECT",
+            "MaterialType": "DIFFUSE_LIGHT",
+
+            "Position": [ 213, 554, 227 ],
+            "Size": [ 130, 0, 105 ],
+            "Colour": [ 15, 15, 15]
+        },
+        {
+            "ShapeType": "XZRECT",
+            "MaterialType": "LAMBERTIAN",
+
+            "Position": [ 0, 0, 0 ],
+            "Size": [ 555, 0, 555 ],
+            "Colour": [ 0.73, 0.73, 0.73 ]
+        },
+        {
+            "ShapeType": "XZRECT",
+            "MaterialType": "LAMBERTIAN",
+
+            "Position": [ 0, 555, 0 ],
+            "Size": [ 555, 0, 555 ],
+            "Colour": [ 0.73, 0.73, 0.73 ]
+        },
+        {
+            "ShapeType": "XYRECT",
+            "MaterialType": "LAMBERTIAN",
+
+            "Position": [ 0, 0, 555 ],
+            "Size": [ 555, 555, 0 ],
+            "Colour": [ 0.73, 0.73, 0.73 ]
+        },
+        {
+            "ShapeType": "CUBE",
+            "MaterialType": "LAMBERTIAN",
+
+            "Position": [ 130, 0, 65 ],
+            "Size": [ 165, 165, 165 ],
+            "Colour": [ 0.73, 0.73, 0.73 ],
+
+            "Angle": -18.0,
+            "Rotation": [ 0.0, 1.0, 0.0 ]
+        },
+        {
+            "ShapeType": "CUBE",
+            "MaterialType": "LAMBERTIAN",
+
+            "Position": [ 265, 0, 295 ],
+            "Size": [ 165, 330, 165 ],
+            "Colour": [ 0.73, 0.73, 0.73 ],
+
+            "Angle": 15.0,
+            "Rotation": [ 0.0, 1.0, 0.0 ]
+        }
+    ]
+}

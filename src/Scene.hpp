@@ -62,7 +62,6 @@ public:
     void setScreenSize(glm::vec2 windowSize);
 
     void renderImgui();
-    // void changeScene(SceneType scene);
 
     void addShape(const Shape& shape);
 
@@ -71,7 +70,6 @@ private:
     void createTexture(unsigned int& image, int width, int height, int bindPort, bool createTexture = true);
     void uploadDataToCompute();
 
-    // void setupVAO();
     void setupShaders();
 
     void resetData();
