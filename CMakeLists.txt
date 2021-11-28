@@ -38,6 +38,7 @@ add_subdirectory(vendor)
 target_include_directories(${PROJECT_NAME} PUBLIC
     KRE
     vendor/glad/include
+    vendor/jsoncpp/include
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${linker} PUBLIC
@@ -47,7 +48,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${linker} PUBLIC
     glfw
     stb
     Imgui
-    ${Jsoncpp_LIBRARIES}
+    jsoncpp_lib
 
     KRE
 )

@@ -37,8 +37,8 @@ private:
     ConstantData m_Data;
 
     KRE::ComputeShader m_ComputeShader;
-    KRE::Shader m_GeneralShader;
-    KRE::VertexArray m_VAO;
+    // KRE::Shader m_GeneralShader;
+    // KRE::VertexArray m_VAO;
 
     unsigned int m_SceneSSBO;
     unsigned int m_DataSSBO;
@@ -62,15 +62,16 @@ public:
     void setScreenSize(glm::vec2 windowSize);
 
     void renderImgui();
-    void changeScene(SceneType scene);
+    // void changeScene(SceneType scene);
 
     void addShape(const Shape& shape);
-    std::vector<Shape>& getScene();
+
+    void setSceneAndData(std::vector<Shape>& scene, ConstantData& data);
 private:
     void createTexture(unsigned int& image, int width, int height, int bindPort, bool createTexture = true);
     void uploadDataToCompute();
 
-    void setupVAO();
+    // void setupVAO();
     void setupShaders();
 
     void resetData();

@@ -30,7 +30,6 @@ void Application::init(glm::vec2 windowSize)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     m_Scene.init(&m_Camera, m_WindowSize);
-    m_Scene.changeScene(Scene_Lighting);
 
     srand(time(0));
 

@@ -5,6 +5,8 @@
 #include <glm/gtc/random.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include "SceneLoader.hpp"
+
 void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
 {
     m_Camera = camera;
@@ -17,10 +19,14 @@ void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
         {1280, 720},
         {1920, 1080}
     };
+    m_CurrentImageSize = 3;
 
-    setupVAO();
+    // setupVAO();
     setupShaders();
     resetData();
+
+    SceneLoader::loadFile("res/scenes/basicScene.json", this);
+    m_Updated = true;
 }
 
 void Scene::setScreenSize(glm::vec2 windowSize)
@@ -39,56 +45,62 @@ void Scene::renderImgui()
     renderImguiData();
 }
 
-void Scene::changeScene(SceneType scene)
-{
-    m_Updated = true;
-    m_Scene.clear();
+// void Scene::changeScene(SceneType scene)
+// {
+//     m_Updated = true;
+//     m_Scene.clear();
 
-    switch(scene)
-    {
-    case Scene_RandomSpheres:
-        randomScene();
-        m_Data.cameraPos = glm::vec3(13, 2, 3);
-        m_Data.cameraLookAt = glm::vec3(0, 0, 0);
-        m_Data.cameraFov = 20.0f;
-        m_Data.cameraAperture = 0.1f;
-        break;
-    case Scene_Lighting:
-        simpleLight();
-        m_Data.background = glm::vec3(0.0f);
-        m_Data.cameraPos = glm::vec3(26, 3, 6);
-        m_Data.cameraLookAt = glm::vec3(0, 2, 0);
-        m_Data.cameraFov = 20.0f;
-        break;
-    case Scene_CornellSmoke:
-        cornellSmoke();
-        m_Data.background = glm::vec3(0.0f);
-        m_Data.cameraPos = glm::vec3(278, 278, -800);
-        m_Data.cameraLookAt = glm::vec3(278, 278, 0);
-        m_Data.cameraFov = 40.0f;
-        break;
-    case Scene_CornellBox:
-        cornellBox();
-        m_Data.background = glm::vec3(0.0f);
-        m_Data.cameraPos = glm::vec3(278, 278, -800);
-        m_Data.cameraLookAt = glm::vec3(278, 278, 0);
-        m_Data.cameraFov = 40.0f;
-        break;
-    default:
-        m_Data.background = glm::vec3(0.0f);
-        break;
-    }
-}
+//     switch(scene)
+//     {
+//     case Scene_RandomSpheres:
+//         randomScene();
+//         m_Data.cameraPos = glm::vec3(13, 2, 3);
+//         m_Data.cameraLookAt = glm::vec3(0, 0, 0);
+//         m_Data.cameraFov = 20.0f;
+//         m_Data.cameraAperture = 0.1f;
+//         break;
+//     case Scene_Lighting:
+//         simpleLight();
+//         m_Data.background = glm::vec3(0.0f);
+//         m_Data.cameraPos = glm::vec3(26, 3, 6);
+//         m_Data.cameraLookAt = glm::vec3(0, 2, 0);
+//         m_Data.cameraFov = 20.0f;
+//         break;
+//     case Scene_CornellSmoke:
+//         cornellSmoke();
+//         m_Data.background = glm::vec3(0.0f);
+//         m_Data.cameraPos = glm::vec3(278, 278, -800);
+//         m_Data.cameraLookAt = glm::vec3(278, 278, 0);
+//         m_Data.cameraFov = 40.0f;
+//         break;
+//     case Scene_CornellBox:
+//         cornellBox();
+//         m_Data.background = glm::vec3(0.0f);
+//         m_Data.cameraPos = glm::vec3(278, 278, -800);
+//         m_Data.cameraLookAt = glm::vec3(278, 278, 0);
+//         m_Data.cameraFov = 40.0f;
+//         break;
+//     default:
+//         m_Data.background = glm::vec3(0.0f);
+//         break;
+//     }
+// }
 
-std::vector<Shape>& Scene::getScene()
-{
-    return m_Scene;
-}
+// std::vector<Shape>& Scene::getScene()
+// {
+//     return m_Scene;
+// }
 
 
 void Scene::addShape(const Shape& shape)
 {
     m_Scene.push_back(shape);
+}
+
+void Scene::setSceneAndData(std::vector<Shape>& scenes, ConstantData& data)
+{
+    m_Scene = scenes;
+    m_Data = data;
 }
 
 void Scene::createTexture(unsigned int& image, int width, int height, int bindPort, bool createTexture)
@@ -122,44 +134,44 @@ void Scene::uploadDataToCompute()
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ConstantData), &m_Data, GL_DYNAMIC_DRAW);
 }
 
-void Scene::setupVAO()
-{
-    KRE::Vertices vertices({
-        // Position     Tex Coords
-         1.0f,  1.0f, 1.0f, 1.0f,
-        -1.0f,  1.0f, 0.0f, 1.0f,
-         1.0f, -1.0f, 1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f, 0.0f
-    });
+// void Scene::setupVAO()
+// {
+//     KRE::Vertices vertices({
+//         // Position     Tex Coords
+//          1.0f,  1.0f, 1.0f, 1.0f,
+//         -1.0f,  1.0f, 0.0f, 1.0f,
+//          1.0f, -1.0f, 1.0f, 0.0f,
+//         -1.0f, -1.0f, 0.0f, 0.0f
+//     });
 
-    KRE::Indices indices({
-        0, 1, 2,
-        1, 2, 3
-    });
+//     KRE::Indices indices({
+//         0, 1, 2,
+//         1, 2, 3
+//     });
 
-    m_VAO.init();
-    KRE::VertexBuffer VBO(true);
-    KRE::ElementArray EBO(true);
-    m_VAO.bind();
-    VBO.bind();
+//     m_VAO.init();
+//     KRE::VertexBuffer VBO(true);
+//     KRE::ElementArray EBO(true);
+//     m_VAO.bind();
+//     VBO.bind();
 
-    VBO.setData(vertices);
+//     VBO.setData(vertices);
 
-    EBO.bind();
-    EBO.setData(indices);
+//     EBO.bind();
+//     EBO.setData(indices);
 
-    VBO.setVertexAttrib(0, 2, 4, 0);
-    VBO.setVertexAttrib(1, 2, 4, 2);
+//     VBO.setVertexAttrib(0, 2, 4, 0);
+//     VBO.setVertexAttrib(1, 2, 4, 2);
 
-    VBO.unbind();
-    m_VAO.unbind();
-}
+//     VBO.unbind();
+//     m_VAO.unbind();
+// }
 
 void Scene::setupShaders()
 {
-    m_GeneralShader.compilePath("res/shaders/basicVertexShader.vs.glsl", "res/shaders/basicFragmentShader.fs.glsl");
-    m_GeneralShader.bind();
-    m_GeneralShader.setUniformInt("u_Texture", 0);
+    // m_GeneralShader.compilePath("res/shaders/basicVertexShader.vs.glsl", "res/shaders/basicFragmentShader.fs.glsl");
+    // m_GeneralShader.bind();
+    // m_GeneralShader.setUniformInt("u_Texture", 0);
 
     m_ComputeShader.compilePath("res/shaders/RaytracingCompute.comp.glsl");
 
@@ -260,7 +272,7 @@ void Scene::renderImguiData()
         glm::ivec2 v = m_ImageSizes[m_CurrentImageSize];
         std::stringstream s;
         s << v.x << " : " << v.y;
-        if (ImGui::BeginCombo("Combo", s.str().c_str(), flags))
+        if (ImGui::BeginCombo("###ImageSize", s.str().c_str(), flags))
         {
             for (int n = 0; n < m_ImageSizes.size(); n++)
             {

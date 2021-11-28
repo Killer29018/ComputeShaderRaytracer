@@ -1,0 +1,39 @@
+{
+    "Data": {
+        "CameraPosition": [ 26.0, 3.0, 6.0 ],
+        "CameraLookAt": [ 0.0, 2.0, 0.0 ],
+        "CameraUp": [ 0.0, 1.0, 0.0 ],
+        "CameraViewDist": 1.0,
+        "CameraFocusDist": 10.0,
+        "CameraFOV": 20.0,
+        "CameraAperture": 0.1,
+        "CameraMaxDepth": 10
+    },
+
+    "Shapes": [
+        {
+            "ShapeType": "SPHERE",
+            "MaterialType": "LAMBERTIAN",
+
+            "Position": [ 0, -1000, 0 ],
+            "Size": [ 1000, 0, 0 ],
+            "Colour": [ 1.0, 1.0, 0.0 ]
+        },
+        {
+            "ShapeType": "SPHERE",
+            "MaterialType": "LAMBERTIAN",
+
+            "Position": [ 0, 2, 0 ],
+            "Size": [ 2, 0, 0],
+            "Colour": [ 1.0, 0.0, 0.0 ]
+        },
+        {
+            "ShapeType": "XYRECT",
+            "MaterialType": "DIFFUSE_LIGHT",
+
+            "Position": [ 3, 1, -2],
+            "Size": [ 2, 2, 0 ],
+            "Colour": [ 4, 4, 4 ]
+        }
+    ]
+}

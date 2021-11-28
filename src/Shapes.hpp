@@ -22,12 +22,13 @@ struct Shape
     alignas(16) glm::vec3 size;
     alignas(16) glm::vec3 colour;
 
-    // X Y Z Rotation
+    // X Y Z Angle
     alignas(16) glm::vec4 rotation;
 
     // ShapeType MatType MatExtra constantMedium
     alignas(16) glm::vec4 extraInfo;
 
+    Shape() = default;
     Shape(ShapeType type, glm::vec3 position, glm::vec3 size, MaterialType matType, glm::vec3 colour, float materialExtra, glm::vec4 rotation = glm::vec4(0.0f))
         : position(position), size(size), colour(colour)
     {
