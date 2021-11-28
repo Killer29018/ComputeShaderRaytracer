@@ -1,11 +1,22 @@
 #include "Scene.hpp"
 
+#include <sstream>
+
 #include <glm/gtc/random.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
 {
     m_Camera = camera;
     m_WindowSize = windowSize;
+
+    m_ImageSizes = {
+        {320, 180},
+        {640, 360},
+        {960, 540},
+        {1280, 720},
+        {1920, 1080}
+    };
 
     setupVAO();
     setupShaders();
@@ -80,16 +91,22 @@ void Scene::addShape(const Shape& shape)
     m_Scene.push_back(shape);
 }
 
-void Scene::createTexture(unsigned int& image, int width, int height, int bindPort)
+void Scene::createTexture(unsigned int& image, int width, int height, int bindPort, bool createTexture)
 {
-    glGenTextures(1, &image);
+    if (createTexture)
+    {
+        glGenTextures(1, &image);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, image);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    }
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, image);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
     glBindImageTexture(bindPort, image, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 }
@@ -146,8 +163,9 @@ void Scene::setupShaders()
 
     m_ComputeShader.compilePath("res/shaders/RaytracingCompute.comp.glsl");
 
-    createTexture(m_OutputImage, m_TextureWidth, m_TextureHeight, 0);
-    createTexture(m_DataImage, m_TextureWidth, m_TextureHeight, 1);
+    glm::ivec2 currentImage = m_ImageSizes[m_CurrentImageSize];
+    createTexture(m_OutputImage, currentImage.x, currentImage.y, 0);
+    createTexture(m_DataImage, currentImage.x, currentImage.y, 1);
 
     glGenBuffers(1, &m_SceneSSBO);
     glGenBuffers(1, &m_DataSSBO);
@@ -204,8 +222,9 @@ void Scene::renderScene()
 
         ImGui::Image((ImTextureID)m_OutputImage, wSize, ImVec2(0, 1), ImVec2(1, 0));
         ImGui::EndChild();
+
+        ImGui::End();
     }
-    ImGui::End();
 }
 
 void Scene::renderImguiData()
@@ -223,13 +242,57 @@ void Scene::renderImguiData()
 
         ImGui::Text("Sample Count: %i", (int)m_SampleCount);
 
-        ImGui::Text("Max Samples:");
-        ImGui::SliderFloat("###MaxSamples", &m_MaxSamples, 100, 20000, "%0.0f");
-
         ImGui::Text("Object Count: %li", m_Scene.size());
-    }
-    ImGui::End();
 
+        ImGui::End();
+    }
+
+    if (ImGui::Begin("Settings"))
+    {
+        ImGui::Text("Max Samples:");
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.90f);
+        ImGui::SliderFloat("###MaxSamples", &m_MaxSamples, 100, 20000, "%0.0f");
+        ImGui::PopItemWidth();
+
+        ImGui::NewLine();
+
+        ImGuiComboFlags flags = ImGuiComboFlags_NoArrowButton;
+        glm::ivec2 v = m_ImageSizes[m_CurrentImageSize];
+        std::stringstream s;
+        s << v.x << " : " << v.y;
+        if (ImGui::BeginCombo("Combo", s.str().c_str(), flags))
+        {
+            for (int n = 0; n < m_ImageSizes.size(); n++)
+            {
+                const bool isSelected = (m_CurrentImageSize == n);
+
+                glm::ivec2 value = m_ImageSizes[n];
+                std::stringstream stringValue;
+                stringValue << value.x << " : " << value.y;
+
+                if (ImGui::Selectable(stringValue.str().c_str(), isSelected))
+                {
+                    m_CurrentImageSize = n;
+                    m_SampleCount = 0;
+                    updateTextureSizes();
+                }
+
+                if (isSelected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+        // ImGui::DropD
+        ImGui::End();
+    }
+
+}
+
+void Scene::updateTextureSizes()
+{
+    glm::ivec2 currentImage = m_ImageSizes[m_CurrentImageSize];
+    createTexture(m_OutputImage, currentImage.x, currentImage.y, 0, false);
+    createTexture(m_DataImage, currentImage.x, currentImage.y, 1, false);
 }
 
 void Scene::randomScene()

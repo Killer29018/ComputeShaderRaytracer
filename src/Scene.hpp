@@ -46,11 +46,11 @@ private:
     unsigned int m_OutputImage;
     unsigned int m_DataImage;
 
-    float m_SampleCount;
+    float m_SampleCount = 0.0f;
     float m_MaxSamples = 1000.0f;
 
-    unsigned int m_TextureWidth = 960;
-    unsigned int m_TextureHeight = 540;
+    std::vector<glm::ivec2> m_ImageSizes;
+    unsigned int m_CurrentImageSize = 0;
 
     bool m_Updated = false;
 public:
@@ -67,7 +67,7 @@ public:
     void addShape(const Shape& shape);
     std::vector<Shape>& getScene();
 private:
-    void createTexture(unsigned int& image, int width, int height, int bindPort);
+    void createTexture(unsigned int& image, int width, int height, int bindPort, bool createTexture = true);
     void uploadDataToCompute();
 
     void setupVAO();
@@ -78,6 +78,8 @@ private:
     void renderCompute();
     void renderScene();
     void renderImguiData();
+
+    void updateTextureSizes();
 
     void randomScene();
     void simpleLight();
