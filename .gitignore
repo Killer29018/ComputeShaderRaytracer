@@ -4,5 +4,3 @@ bin/**
 build/**
 .vscode/**
 dlls/**
-imgui.ini
-

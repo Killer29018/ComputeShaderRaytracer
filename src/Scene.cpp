@@ -19,7 +19,7 @@ void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
         {1280, 720},
         {1920, 1080}
     };
-    m_CurrentImageSize = 3;
+    m_CurrentImageSize = 4;
 
     // setupVAO();
     setupShaders();
@@ -134,7 +134,8 @@ void Scene::renderCompute()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, m_DataImage);
 
-        glDispatchCompute(m_WindowSize.x / localWorkGroupSize, m_WindowSize.y / localWorkGroupSize, 1);
+        glm::ivec2 imageSize = m_ImageSizes[m_CurrentImageSize];
+        glDispatchCompute(imageSize.x / localWorkGroupSize, imageSize.y / localWorkGroupSize, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
         m_SampleCount += 1.0f;
     }
@@ -209,6 +210,13 @@ void Scene::renderImguiData()
                     ImGui::SetItemDefaultFocus();
             }
             ImGui::EndCombo();
+        }
+
+        static bool vsync = true;
+        if (ImGui::Checkbox("Vsync", &vsync))
+        {
+            glfwSwapInterval(vsync);
+            currentAvgFPS = 0.0f;
         }
         ImGui::End();
     }

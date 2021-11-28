@@ -37,8 +37,6 @@ private:
     ConstantData m_Data;
 
     KRE::ComputeShader m_ComputeShader;
-    // KRE::Shader m_GeneralShader;
-    // KRE::VertexArray m_VAO;
 
     unsigned int m_SceneSSBO;
     unsigned int m_DataSSBO;

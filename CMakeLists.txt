@@ -48,7 +48,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${linker} PUBLIC
     glfw
     stb
     Imgui
-    jsoncpp_lib
+    jsoncpp
 
     KRE
 )
