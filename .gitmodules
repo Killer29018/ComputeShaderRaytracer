@@ -11,3 +11,6 @@
 [submodule "vendor/KRE"]
 	path = vendor/KRE
 	url = https://github.com/killer29018/KillerRenderEngine.git
+[submodule "vendor/jsoncpp"]
+	path = vendor/jsoncpp
+	url = https://github.com/open-source-parsers/jsoncpp
