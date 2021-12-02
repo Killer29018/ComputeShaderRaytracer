@@ -46,9 +46,6 @@ void Application::run()
 
         ImguiWindowManager::preRender();
 
-        bool showDemoWindow = true;
-        ImGui::ShowDemoWindow(&showDemoWindow);
-
         ImguiWindowManager::render();
 
         ImguiWindowManager::postRender();

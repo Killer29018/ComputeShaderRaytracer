@@ -10,10 +10,9 @@ CameraViewDist: (float)
 CameraFocusDist: (float)
 CameraFOV: (float)
 CameraAperture: (float)
-CameraMaxDepth: (uint)
 
 ;; Shapes
-ShapeType: 
+ShapeType:
     SPHERE
     XYRECT
     XZRECT

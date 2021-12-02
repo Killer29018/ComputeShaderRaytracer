@@ -34,11 +34,11 @@ layout (std430, binding = 3) buffer SSBO_Data
     float ssbo_CameraFocusDist;
     float ssbo_CameraFOV;
     float ssbo_CameraAperture;
-    uint ssbo_MaxDepth;
     float ssbo_AspectRatio;
 };
 
 uniform float u_SampleCount;
+uniform int u_MaxDepth;
 
 struct Ray
 {
@@ -173,7 +173,7 @@ vec3 getPixelColour(in float minT, in float maxT)
     vec3 finalColour = vec3(0.0);
     HitRecord rec;
 
-    uint depth = ssbo_MaxDepth;
+    uint depth = uint(u_MaxDepth);
     Ray currentRay;
 
     float x = (float(pixelCoords.x) + (rand(seed) / 2.0)) / float(dims.x);

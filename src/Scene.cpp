@@ -25,7 +25,7 @@ void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
     setupShaders();
     resetData();
 
-    SceneLoader::loadFile("res/scenes/basicLighting.json", this);
+    SceneLoader::loadFile("res/scenes/CornellSmoke.json", this);
     m_Updated = true;
 }
 
@@ -40,6 +40,8 @@ void Scene::setScreenSize(glm::vec2 windowSize)
 
 void Scene::renderImgui()
 {
+    renderMenuBar();
+
     renderCompute();
     renderScene();
     renderImguiData();
@@ -58,19 +60,21 @@ void Scene::setSceneAndData(std::vector<Shape>& scenes, ConstantData& data)
 
 void Scene::createTexture(unsigned int& image, int width, int height, int bindPort, bool createTexture)
 {
-    if (createTexture)
-    {
-        glGenTextures(1, &image);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, image);
+    glActiveTexture(GL_TEXTURE0);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    if (!createTexture)
+    {
+        glDeleteTextures(1, &image);
     }
 
-    glActiveTexture(GL_TEXTURE0);
+    glGenTextures(1, &image);
+    glBindTexture(GL_TEXTURE_2D, image);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
     glBindTexture(GL_TEXTURE_2D, image);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
     glBindImageTexture(bindPort, image, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
@@ -109,7 +113,6 @@ void Scene::resetData()
     m_Data.cameraFocusDist = 10.0;
     m_Data.cameraFov = 40.0f;
     m_Data.cameraAperture = 0.0;
-    m_Data.maxDepth = 10;
     m_Data.aspectRatio = 16.0/9.0;
 }
 
@@ -128,6 +131,7 @@ void Scene::renderCompute()
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_DataSSBO);
         m_ComputeShader.bind();
         m_ComputeShader.setUniformFloat("u_SampleCount", m_SampleCount);
+        m_ComputeShader.setUniformInt("u_MaxDepth", m_MaxDepth);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, m_OutputImage);
@@ -178,10 +182,12 @@ void Scene::renderImguiData()
 
     if (ImGui::Begin("Settings"))
     {
-        ImGui::Text("Max Samples:");
         ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.90f);
+
+        ImGui::Text("Max Samples:");
         ImGui::SliderFloat("###MaxSamples", &m_MaxSamples, 100, 20000, "%0.0f");
-        ImGui::PopItemWidth();
+        ImGui::Text("Max Depth:");
+        ImGui::SliderInt("###MaxDepth", &m_MaxDepth, 1, 500);
 
         ImGui::NewLine();
 
@@ -218,7 +224,30 @@ void Scene::renderImguiData()
             glfwSwapInterval(vsync);
             currentAvgFPS = 0.0f;
         }
+
+        if (ImGui::Button("Clear Textures", ImVec2(ImGui::GetWindowWidth() * 0.90f, 0)))
+        {
+            updateTextureSizes();
+            m_SampleCount = 0.0f;
+        }
+
+        ImGui::PopItemWidth();
+
         ImGui::End();
+    }
+}
+
+void Scene::renderMenuBar()
+{
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("Menu"))
+        {
+            ImGui::MenuItem("This is a Menu", NULL, false, false);
+            // Add File Loading and Saving
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
     }
 }
 

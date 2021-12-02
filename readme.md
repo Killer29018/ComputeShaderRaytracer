@@ -25,3 +25,10 @@ Written in C++ using Opengl for the graphics.
 #### Cornell Box With Smoke
 ![Cornell Box](img/CornellBoxWithSmoke.png)
 640x640 : 10000 Samples
+
+#### Imgui Window
+#### Cornell Smoke
+![Cornell Smoke Imgui](img/CornellSmoke_Imgui.png)
+
+#### Lighting
+![Lighting Imgui](img/Lighting_Imgui.png)

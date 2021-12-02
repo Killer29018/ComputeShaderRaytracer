@@ -7,8 +7,7 @@
         "CameraViewDist": 1.0,
         "CameraFocusDist": 10.0,
         "CameraFOV": 40.0,
-        "CameraAperture": 0.0,
-        "CameraMaxDepth": 10
+        "CameraAperture": 0.0
     },
 
     "Shapes": [

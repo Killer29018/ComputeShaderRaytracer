@@ -13,7 +13,6 @@ struct ConstantData
     float cameraFocusDist;
     float cameraFov;
     float cameraAperture;
-    unsigned int maxDepth;
     float aspectRatio;
 };
 

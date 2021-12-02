@@ -41,6 +41,10 @@ void ImguiWindowManager::render()
 {
     bool show = true;
     showDockspace(&show);
+
+	static bool showDemo = false;
+	// ImGui::ShowDemoWindow(&showDemo);
+
     for (int i = 0; i < m_Windows.size(); i++)
     {
         m_Windows[i]->renderImgui();

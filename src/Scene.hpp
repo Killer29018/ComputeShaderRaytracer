@@ -46,6 +46,7 @@ private:
 
     float m_SampleCount = 0.0f;
     float m_MaxSamples = 1000.0f;
+    int m_MaxDepth = 10;
 
     std::vector<glm::ivec2> m_ImageSizes;
     unsigned int m_CurrentImageSize = 0;
@@ -75,6 +76,7 @@ private:
     void renderCompute();
     void renderScene();
     void renderImguiData();
+    void renderMenuBar();
 
     void updateTextureSizes();
 

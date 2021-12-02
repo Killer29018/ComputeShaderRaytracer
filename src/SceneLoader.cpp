@@ -54,7 +54,6 @@ void SceneLoader::loadData()
     m_Data.cameraFocusDist = data["CameraFocusDist"].asFloat();
     m_Data.cameraFov = data["CameraFOV"].asFloat();
     m_Data.cameraAperture = data["CameraAperture"].asFloat();
-    m_Data.maxDepth = data["CameraMaxDepth"].asUInt();
     m_Data.aspectRatio = 16.0 / 9.0;
 }
 
