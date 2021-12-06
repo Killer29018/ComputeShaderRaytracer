@@ -25,7 +25,7 @@ void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
     setupShaders();
     resetData();
 
-    SceneLoader::loadFile("res/scenes/CornellSmoke.json", this);
+    SceneLoader::loadFile("res/scenes/basicLighting.json", this);
     m_Updated = true;
 }
 
@@ -130,6 +130,7 @@ void Scene::renderCompute()
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_SceneSSBO);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_DataSSBO);
         m_ComputeShader.bind();
+        m_ComputeShader.setUniformInt("u_EnableRaycasting", m_EnableRaycasting);
         m_ComputeShader.setUniformFloat("u_SampleCount", m_SampleCount);
         m_ComputeShader.setUniformInt("u_MaxDepth", m_MaxDepth);
 
@@ -141,7 +142,9 @@ void Scene::renderCompute()
         glm::ivec2 imageSize = m_ImageSizes[m_CurrentImageSize];
         glDispatchCompute(imageSize.x / localWorkGroupSize, imageSize.y / localWorkGroupSize, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-        m_SampleCount += 1.0f;
+
+        if (!m_EnableRaycasting)
+            m_SampleCount += 1.0f;
     }
 }
 
@@ -176,6 +179,8 @@ void Scene::renderImguiData()
         ImGui::Text("Sample Count: %i", (int)m_SampleCount);
 
         ImGui::Text("Object Count: %li", m_Scene.size());
+
+        ImGui::Text("Raycasting: %s", m_EnableRaycasting ? "Enabled" : "Disabled");
 
         ImGui::End();
     }
@@ -218,17 +223,21 @@ void Scene::renderImguiData()
             ImGui::EndCombo();
         }
 
-        static bool vsync = true;
-        if (ImGui::Checkbox("Vsync", &vsync))
+        if (ImGui::Checkbox("Vsync", &m_Vsync))
         {
-            glfwSwapInterval(vsync);
+            glfwSwapInterval(m_Vsync);
             currentAvgFPS = 0.0f;
+        }
+        if (ImGui::Checkbox("Enable Raycasting", &m_EnableRaycasting))
+        {
+            m_SampleCount = 1.0f;
+            updateTextureSizes();
         }
 
         if (ImGui::Button("Clear Textures", ImVec2(ImGui::GetWindowWidth() * 0.90f, 0)))
         {
             updateTextureSizes();
-            m_SampleCount = 0.0f;
+            m_SampleCount = 1.0f;
         }
 
         ImGui::PopItemWidth();

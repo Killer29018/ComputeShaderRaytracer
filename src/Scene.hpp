@@ -52,6 +52,8 @@ private:
     unsigned int m_CurrentImageSize = 0;
 
     bool m_Updated = false;
+    bool m_Vsync = false;
+    bool m_EnableRaycasting = false;
 public:
     Scene() = default;
     ~Scene() = default;

@@ -39,6 +39,7 @@ layout (std430, binding = 3) buffer SSBO_Data
 
 uniform float u_SampleCount;
 uniform int u_MaxDepth;
+uniform bool u_EnableRaycasting;
 
 struct Ray
 {
@@ -70,6 +71,8 @@ vec3 vertical;
 vec3 w, u, v;
 float lensRadius;
 
+vec3 backgroundColour;
+
 uint seed;
 
 vec3 getPixelColour(in float tMin, in float tMax);
@@ -94,6 +97,7 @@ bool yzRectHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in flo
 bool cubeHit(in Ray ray, in vec3 position, in vec3 size, in float tMin, in float tMax, inout HitRecord rec);
 bool constantMediumHit(in Ray ray, in Shape shape, in float tMin, in float tMax, inout HitRecord rec);
 
+bool scatterRaycast(in Ray r, inout HitRecord rec, out vec3 attenuation);
 bool scatterLambertian(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattereed);
 bool scatterMetal(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattereed);
 bool scatterDielectric(in Ray r, inout HitRecord rec, out vec3 attenuation, out Ray scattered);
@@ -122,6 +126,13 @@ void main()
 
     seed = hash(gl_GlobalInvocationID.x) ^ hash(gl_GlobalInvocationID.y * workGroupSize.y) ^ hash(uint(u_SampleCount));
 
+    backgroundColour = ssbo_BackgroundColour;
+    if (u_EnableRaycasting)
+    {
+        seed = 1;
+        backgroundColour = vec3(0.1);
+    }
+
     // Camera
     float theta = radians(ssbo_CameraFOV);
     float h = tan(theta/2.0);
@@ -143,14 +154,20 @@ void main()
     vec3 finalColour = getPixelColour(0.0001, infinity);
 
     // Get previous summed total
-    vec4 previousPx = imageLoad(imgData, pixelCoords);
-    finalColour += previousPx.rgb;
+    if (!u_EnableRaycasting)
+    {
+        vec4 previousPx = imageLoad(imgData, pixelCoords);
+        finalColour += previousPx.rgb;
 
-    // Add Colour to the storage Image
-    imageStore(imgData, pixelCoords, vec4(finalColour, 1.0));
+        // Add Colour to the storage Image
+        imageStore(imgData, pixelCoords, vec4(finalColour, 1.0));
+    }
 
     // Gamma Correction
     float gamma = 1.0 / float(u_SampleCount);
+    if (u_EnableRaycasting)
+        gamma = 1.0f;
+
     finalColour.r = sqrt(gamma * finalColour.r);
     finalColour.g = sqrt(gamma * finalColour.g);
     finalColour.b = sqrt(gamma * finalColour.b);
@@ -179,6 +196,13 @@ vec3 getPixelColour(in float minT, in float maxT)
     float x = (float(pixelCoords.x) + (rand(seed) / 2.0)) / float(dims.x);
     float y = (float(pixelCoords.y) + (rand(seed) / 2.0)) / float(dims.y);
 
+    if (u_EnableRaycasting)
+    {
+        x = (float(pixelCoords.x)) / float(dims.x);
+        y = (float(pixelCoords.y)) / float(dims.y);
+        depth = 1;
+    }
+
     getRay(currentRay, x, y);
 
     vec3 colour = vec3(1.0);
@@ -200,19 +224,26 @@ vec3 getPixelColour(in float minT, in float maxT)
             vec3 emitted = vec3(0.0);
 
             bool hit = false;
-            switch (tempRec.matType)
+            if (u_EnableRaycasting)
             {
-            case 0:
-                hit = scatterLambertian(currentRay, tempRec, attenuation, scattered); break;
-            case 1:
-                hit = scatterMetal(currentRay, tempRec, attenuation, scattered); break;
-            case 2:
-                hit = scatterDielectric(currentRay, tempRec, attenuation, scattered); break;
-            case 3:
-                emitted = tempRec.mat.albedo;
-                hit = scatterDiffuseLight(currentRay, tempRec, attenuation, scattered); break;
-            case 4:
-                hit = scatterIsotropic(currentRay, tempRec, attenuation, scattered); break;
+                hit = scatterRaycast(currentRay, tempRec, attenuation);
+            }
+            else
+            {
+                switch (tempRec.matType)
+                {
+                case 0:
+                    hit = scatterLambertian(currentRay, tempRec, attenuation, scattered); break;
+                case 1:
+                    hit = scatterMetal(currentRay, tempRec, attenuation, scattered); break;
+                case 2:
+                    hit = scatterDielectric(currentRay, tempRec, attenuation, scattered); break;
+                case 3:
+                    emitted = tempRec.mat.albedo;
+                    hit = scatterDiffuseLight(currentRay, tempRec, attenuation, scattered); break;
+                case 4:
+                    hit = scatterIsotropic(currentRay, tempRec, attenuation, scattered); break;
+                }
             }
 
             if (hit)
@@ -223,7 +254,9 @@ vec3 getPixelColour(in float minT, in float maxT)
             }
             else
             {
-                colour *= emitted;
+                if (!u_EnableRaycasting)
+                    colour *= emitted;
+
                 depth = 0;
                 break;
             }
@@ -233,12 +266,15 @@ vec3 getPixelColour(in float minT, in float maxT)
         }
         else
         {
-            colour *= ssbo_BackgroundColour;
+            colour *= backgroundColour;
 
             break;
         }
 
         depth--;
+
+        if (u_EnableRaycasting)
+            break;
     }
 
     return colour;
@@ -563,6 +599,15 @@ bool constantMediumHit(in Ray ray, in Shape shape, in float tMin, in float tMax,
     return true;
 }
 
+bool scatterRaycast(in Ray r, inout HitRecord rec, out vec3 attenuation)
+{
+    vec3 direction = normalize(ssbo_CameraPos - rec.point);
+    float diff = max(dot(rec.normal, direction), 0.0);
+    attenuation = diff * rec.mat.albedo;
+
+    return true;
+}
+
 bool scatterLambertian(in Ray ray, inout HitRecord rec, out vec3 attenuation, out Ray scattered)
 {
     vec3 scatterDirection = rec.normal + normalize(randInUnitSphere(seed));
@@ -649,6 +694,11 @@ void getRay(inout Ray ray, float x, float y)
     vec3 rd = lensRadius * randInUnitDisc(seed);
     vec3 offset = u*rd.x + v*rd.y;
 
+    if (u_EnableRaycasting)
+    {
+        offset = vec3(0.0);
+    }
+
     ray.origin = ssbo_CameraPos + offset;
     ray.direction = lowerLeftCorner + (x*horizontal) + (y*vertical) - ssbo_CameraPos - offset;
 }
@@ -674,7 +724,7 @@ float rand(inout uint seed)
     uint m = (seed >> 9) | 0x40000000u;
 
     float f = uintBitsToFloat(m);   // Range [2:4]
-    return (f / 2.0) - 1.0;
+    return (f / 2.0) - 1.0; // Range [0:1]
 }
 
 vec2 randVec2(inout uint seed)

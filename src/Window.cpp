@@ -7,7 +7,7 @@ void Window::init()
 {
     initGLFW();
 
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
 
     glfwSetKeyCallback(window, Application::GLFWKeyCallback);
     glfwSetWindowSizeCallback(window, Application::GLFWResizeCallback);
