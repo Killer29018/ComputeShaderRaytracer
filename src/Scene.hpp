@@ -54,6 +54,9 @@ private:
     bool m_Updated = false;
     bool m_Vsync = false;
     bool m_EnableRaycasting = false;
+
+    float m_AverageFPS = 0.0f;
+    int m_FPSCount = 0;
 public:
     Scene() = default;
     ~Scene() = default;

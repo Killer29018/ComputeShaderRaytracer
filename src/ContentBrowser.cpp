@@ -27,13 +27,18 @@ void ContentBrowser::renderImgui()
 		for (auto& directory : std::filesystem::directory_iterator(m_CurrentDirectory))
 		{
 			const auto& path = directory.path();
-			auto relativePath = std::filesystem::relative(path, m_SceneDirectory);
-			std::string filename = relativePath.filename().string();
+			std::string filename = path.filename().string();
 
 			ImGui::PushID(filename.c_str());
 			if (ImGui::Button(filename.c_str(), { thumbnailSize, thumbnailSize }))
 			{
-				SceneLoader::loadFile(path.relative_path().string().c_str(), m_Scene);
+				std::string extension = path.filename().extension().string();
+				if (directory.is_directory())
+				{
+					m_CurrentDirectory = directory;
+				}
+				else if (path.filename().extension().string() == ".scene")
+					SceneLoader::loadFile(path.relative_path().string().c_str(), m_Scene);
 			}
 
 			ImGui::NextColumn();

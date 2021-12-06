@@ -25,9 +25,6 @@ void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
     // setupVAO();
     setupShaders();
     resetData();
-
-    SceneLoader::loadFile("res/scenes/basicLighting.json", this);
-    m_Updated = true;
 }
 
 void Scene::setScreenSize(glm::vec2 windowSize)
@@ -182,16 +179,13 @@ void Scene::renderScene()
 
 void Scene::renderImguiData()
 {
-    static int quantity = 0.0f;
-    static float currentAvgFPS = 0.0f;
-
-    quantity++;
-    currentAvgFPS += (KRE::Clock::deltaTime - currentAvgFPS)/(float)quantity;
+    m_FPSCount++;
+    m_AverageFPS += (KRE::Clock::deltaTime - m_AverageFPS)/(float)m_FPSCount;
 
     if (ImGui::Begin("Data"))
     {
         ImGui::Text("FPS: %f", (1.0f / KRE::Clock::deltaTime));
-        ImGui::Text("AVG FPS: %f", 1.0f / currentAvgFPS);
+        ImGui::Text("AVG FPS: %f", 1.0f / m_AverageFPS);
 
         ImGui::Text("Sample Count: %i", (int)m_SampleCount);
 
@@ -242,8 +236,8 @@ void Scene::renderImguiData()
         if (ImGui::Checkbox("Vsync", &m_Vsync))
         {
             glfwSwapInterval(m_Vsync);
-            currentAvgFPS = 0.0f;
-            quantity = 0.0f;
+            m_AverageFPS = 0.0f;
+            m_FPSCount = 0.0f;
         }
         if (ImGui::Checkbox("Enable Raycasting", &m_EnableRaycasting))
         {
@@ -285,5 +279,7 @@ void Scene::updateTextureSizes()
 void Scene::cleanScene()
 {
     updateTextureSizes();
+    m_AverageFPS = 0.0f;
+    m_FPSCount = 0;
     m_SampleCount = 1.0f;
 }
