@@ -17,7 +17,8 @@ void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
         {640, 360},
         {960, 540},
         {1280, 720},
-        {1920, 1080}
+        {1920, 1080},
+        {2560, 1440}
     };
     m_CurrentImageSize = 4;
 
@@ -33,7 +34,6 @@ void Scene::setScreenSize(glm::vec2 windowSize)
 {
     m_WindowSize = windowSize;
 
-    // m_Data.aspectRatio = m_WindowSize.x / m_WindowSize.y;
     m_Data.aspectRatio = 16.0/9.0;
     m_Updated = true;
 }
@@ -54,8 +54,12 @@ void Scene::addShape(const Shape& shape)
 
 void Scene::setSceneAndData(std::vector<Shape>& scenes, ConstantData& data)
 {
+    m_Scene.clear();
     m_Scene = scenes;
     m_Data = data;
+
+    cleanScene();
+    m_Updated = true;
 }
 
 void Scene::createTexture(unsigned int& image, int width, int height, int bindPort, bool createTexture)
@@ -154,7 +158,20 @@ void Scene::renderScene()
     {
         ImGui::BeginChild("SceneRender");
 
-        ImVec2 wSize = ImGui::GetWindowSize();
+        ImVec2 wSize = ImGui::GetContentRegionAvail();
+        float aspectRatio = m_WindowSize.x / m_WindowSize.y;
+        float correctWidth = wSize.y * aspectRatio;
+        float correctHeight = wSize.x / aspectRatio;
+
+        if (wSize.y < correctHeight)
+        {
+            wSize.x = wSize.y * aspectRatio;
+        }
+
+        if (wSize.x < correctWidth)
+        {
+            wSize.y = correctHeight;
+        }
 
         ImGui::Image((ImTextureID)m_OutputImage, wSize, ImVec2(0, 1), ImVec2(1, 0));
         ImGui::EndChild();
@@ -190,9 +207,9 @@ void Scene::renderImguiData()
         ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.90f);
 
         ImGui::Text("Max Samples:");
-        ImGui::SliderFloat("###MaxSamples", &m_MaxSamples, 100, 20000, "%0.0f");
+        ImGui::DragFloat("###MaxSamples", &m_MaxSamples, 10.0f, 100, 20000, "%0.0f");
         ImGui::Text("Max Depth:");
-        ImGui::SliderInt("###MaxDepth", &m_MaxDepth, 1, 500);
+        ImGui::DragInt("###MaxDepth", &m_MaxDepth, 1, 1, 500);
 
         ImGui::NewLine();
 
@@ -213,8 +230,7 @@ void Scene::renderImguiData()
                 if (ImGui::Selectable(stringValue.str().c_str(), isSelected))
                 {
                     m_CurrentImageSize = n;
-                    m_SampleCount = 0;
-                    updateTextureSizes();
+                    cleanScene();
                 }
 
                 if (isSelected)
@@ -227,17 +243,16 @@ void Scene::renderImguiData()
         {
             glfwSwapInterval(m_Vsync);
             currentAvgFPS = 0.0f;
+            quantity = 0.0f;
         }
         if (ImGui::Checkbox("Enable Raycasting", &m_EnableRaycasting))
         {
-            m_SampleCount = 1.0f;
-            updateTextureSizes();
+            cleanScene();
         }
 
         if (ImGui::Button("Clear Textures", ImVec2(ImGui::GetWindowWidth() * 0.90f, 0)))
         {
-            updateTextureSizes();
-            m_SampleCount = 1.0f;
+            cleanScene();
         }
 
         ImGui::PopItemWidth();
@@ -265,4 +280,10 @@ void Scene::updateTextureSizes()
     glm::ivec2 currentImage = m_ImageSizes[m_CurrentImageSize];
     createTexture(m_OutputImage, currentImage.x, currentImage.y, 0, false);
     createTexture(m_DataImage, currentImage.x, currentImage.y, 1, false);
+}
+
+void Scene::cleanScene()
+{
+    updateTextureSizes();
+    m_SampleCount = 1.0f;
 }

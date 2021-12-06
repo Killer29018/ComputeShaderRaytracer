@@ -82,10 +82,7 @@ private:
 
     void updateTextureSizes();
 
-    void randomScene();
-    void simpleLight();
-    void cornellSmoke();
-    void cornellBox();
+    void cleanScene();
 };
 
 #endif

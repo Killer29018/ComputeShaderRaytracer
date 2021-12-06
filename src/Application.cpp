@@ -2,6 +2,7 @@
 
 Window Application::m_Window;
 Scene Application::m_Scene;
+ContentBrowser Application::m_ContentBrowser(&m_Scene);
 glm::vec2 Application::m_WindowSize;
 KRE::Camera Application::m_Camera({ 0.0f, 0.0f });
 
@@ -36,6 +37,7 @@ void Application::init(glm::vec2 windowSize)
     ImguiWindowManager::init(m_Window.window);
 
     ImguiWindowManager::addWindow(m_Scene);
+    ImguiWindowManager::addWindow(m_ContentBrowser);
 }
 
 void Application::run()

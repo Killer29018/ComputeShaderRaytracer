@@ -6,6 +6,8 @@
 
 #include "Window.hpp"
 #include "Scene.hpp"
+#include "ContentBrowser.hpp"
+
 #include "ImguiWindowManager.hpp"
 
 #include "KRE/KRE.hpp"
@@ -15,6 +17,7 @@ class Application
 private:
     static Window m_Window;
     static Scene m_Scene;
+    static ContentBrowser m_ContentBrowser;
     static glm::vec2 m_WindowSize;
 
     static KRE::Camera m_Camera;
