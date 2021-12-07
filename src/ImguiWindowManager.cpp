@@ -39,7 +39,7 @@ void ImguiWindowManager::preRender()
 
 void ImguiWindowManager::render()
 {
-    bool show = true;
+    static bool show = true;
     showDockspace(&show);
 
 	static bool showDemo = false;
@@ -64,7 +64,7 @@ void ImguiWindowManager::showDockspace(bool* open)
 {
     static bool fullscreen = true;
 
-    static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+    static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_AutoHideTabBar;
 
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
     if (fullscreen)
@@ -156,8 +156,8 @@ void ImguiWindowManager::setupStyle()
 	colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.000f, 0.000f, 0.000f, 0.586f);
 
 	style->ChildRounding = 4.0f;
-	style->FrameBorderSize = 1.0f;
-	style->FrameRounding = 2.0f;
+	style->FrameBorderSize = 0.0f;
+	style->FrameRounding = 1.0f;
 	style->GrabMinSize = 7.0f;
 	style->PopupRounding = 2.0f;
 	style->ScrollbarRounding = 12.0f;

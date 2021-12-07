@@ -26,6 +26,12 @@ void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
     // setupVAO();
     setupShaders();
     resetData();
+
+	m_PlayButton.init();
+	m_StopButton.init();
+
+	m_PlayButton.generateFromPath("res/textures/Play.png");
+	m_StopButton.generateFromPath("res/textures/Stop.png");
 }
 
 void Scene::setScreenSize(glm::vec2 windowSize)
@@ -127,7 +133,7 @@ void Scene::renderCompute()
 
     if (!(m_SampleCount >= m_MaxSamples))
     {
-        int localWorkGroupSize = 16;
+        const int localWorkGroupSize = 16;
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_SceneSSBO);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_DataSSBO);
         m_ComputeShader.bind();
@@ -151,7 +157,8 @@ void Scene::renderCompute()
 
 void Scene::renderScene()
 {
-    if (ImGui::Begin("Scene"))
+	ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration;
+    if (ImGui::Begin("Scene", (bool*)0, flags))
     {
         ImGui::BeginChild("SceneRender");
 
@@ -183,11 +190,32 @@ void Scene::renderScene()
 				const wchar_t* path = (const wchar_t*)payload->Data;
 				SceneLoader::loadFile(ContentBrowser::s_SceneDirectory / path, this);
 				ImGui::EndDragDropTarget();
+
+				m_CurrentlyPlaying = false;
+				m_EnableRaycasting = true;
 			}
 		}
 
-        ImGui::End();
     }
+	ImGui::End();
+
+	if (ImGui::Begin("###UI_BAR", (bool*)0, flags))
+	{
+		float size = ImGui::GetContentRegionAvail().y - 4.1f;
+		ImGui::SetCursorPosX((ImGui::GetContentRegionAvail().x - size) * 0.5f);
+
+		unsigned int activeTexture = !m_CurrentlyPlaying ? m_PlayButton.ID : m_StopButton.ID;
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+		if (ImGui::ImageButton((ImTextureID)activeTexture, ImVec2(size, size)))
+		{
+			cleanScene();
+
+			m_CurrentlyPlaying = !m_CurrentlyPlaying;
+			m_EnableRaycasting = !m_CurrentlyPlaying;
+		}
+		ImGui::PopStyleColor();
+	}
+	ImGui::End();
 }
 
 void Scene::renderImguiData()
@@ -204,7 +232,8 @@ void Scene::renderImguiData()
 
         ImGui::Text("Object Count: %li", m_Scene.size());
 
-        ImGui::Text("Raycasting: %s", m_EnableRaycasting ? "Enabled" : "Disabled");
+        // ImGui::Text("Raycasting: %s", m_EnableRaycasting ? "Enabled" : "Disabled");
+        // ImGui::Text("Playing: %s", m_CurrentlyPlaying ? "Playing" : "Paused");
 
         ImGui::End();
     }
@@ -252,10 +281,10 @@ void Scene::renderImguiData()
             m_AverageFPS = 0.0f;
             m_FPSCount = 0.0f;
         }
-        if (ImGui::Checkbox("Enable Raycasting", &m_EnableRaycasting))
-        {
-            cleanScene();
-        }
+        // if (ImGui::Checkbox("Enable Raycasting", &m_EnableRaycasting))
+        // {
+        //     cleanScene();
+        // }
 
         if (ImGui::Button("Clear Textures", ImVec2(ImGui::GetWindowWidth() * 0.90f, 0)))
         {

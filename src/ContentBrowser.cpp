@@ -22,7 +22,7 @@ void ContentBrowser::renderImgui()
 {
 	if (ImGui::Begin("FileSystem"))
 	{
-		if (ImGui::Button("<-"))
+		if (ImGui::Button("<-") && m_CurrentDirectory.has_parent_path())
 			m_CurrentDirectory = m_CurrentDirectory.parent_path();
 
 		static float padding = 16.0f;
@@ -51,9 +51,11 @@ void ContentBrowser::renderImgui()
 			{
 				if (directory.is_directory())
 					m_CurrentDirectory /= path.filename();
+				else if (path.extension().string() == ".scene")
+					SceneLoader::loadFile(s_SceneDirectory / relativePath, m_Scene);
 			}
 
-			if (ImGui::BeginDragDropSource())
+			if (path.extension().string() == ".scene" && ImGui::BeginDragDropSource())
 			{
 				const wchar_t* itemPath = relativePath.c_str();
 				ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t), ImGuiCond_Once);

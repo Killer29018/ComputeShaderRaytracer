@@ -38,6 +38,8 @@ private:
 
     KRE::ComputeShader m_ComputeShader;
 
+	KRE::Texture m_PlayButton, m_StopButton;
+
     unsigned int m_SceneSSBO;
     unsigned int m_DataSSBO;
 
@@ -53,7 +55,9 @@ private:
 
     bool m_Updated = false;
     bool m_Vsync = false;
-    bool m_EnableRaycasting = false;
+    bool m_EnableRaycasting = true;
+
+	bool m_CurrentlyPlaying = false;
 
     float m_AverageFPS = 0.0f;
     int m_FPSCount = 0;

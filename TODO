@@ -1,6 +1,6 @@
-☐ Add a filesystem view
-☐ Allow for Scenes to be loaded through the filesystem
-☐ Add a play/pause button to change between Raytracing and Raycasting
+✔ Add a filesystem view @done(21-12-07 22:06)
+✔ Allow for Scenes to be loaded through the filesystem @done(21-12-07 22:06)
+✔ Add a play/pause button to change between Raytracing and Raycasting @done(21-12-07 22:05)
 ☐ Allow for the scene to be modified within the menu
 ☐ Allow for the camera to be moved
 ☐ Add a Denoise Filter
