@@ -8,11 +8,16 @@ Json::Value SceneLoader::m_Root;
 
 void SceneLoader::loadFile(const char* filePath, Scene* scene)
 {
-    getRoot(filePath);
-    loadData();
-    loadShapes();
+	loadFile(filePath, scene);
+}
 
-    scene->setSceneAndData(m_Scene, m_Data);
+void SceneLoader::loadFile(const std::filesystem::path path, Scene* scene)
+{
+	getRoot(path.string().c_str());
+	loadData();
+	loadShapes();
+
+	scene->setSceneAndData(m_Scene, m_Data);
 }
 
 void SceneLoader::getRoot(const char* filePath)

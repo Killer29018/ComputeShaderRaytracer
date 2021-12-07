@@ -7,16 +7,22 @@
 #include "Scene.hpp"
 
 #include "imgui.h"
+#include "KRE/Classes/Texture.hpp"
 
 class ContentBrowser : public ImguiWindow
 {
+public:
+	static std::filesystem::path s_SceneDirectory;
 private:
 	Scene* m_Scene;
 
+	KRE::Texture fileIcon;
+	KRE::Texture folderIcon;
+
 	std::filesystem::path m_CurrentDirectory;
-	std::filesystem::path m_SceneDirectory = "res/scenes";
 public:
-	ContentBrowser(Scene* scene);
+	ContentBrowser();
+	void init(Scene* scene);
 	void renderImgui();
 };
 

@@ -71,7 +71,7 @@ public:
 
     void setSceneAndData(std::vector<Shape>& scene, ConstantData& data);
 private:
-    void createTexture(unsigned int& image, int width, int height, int bindPort, bool createTexture = true);
+    void createTexture(unsigned int& image, int width, int height, int bindPort);
     void uploadDataToCompute();
 
     void setupShaders();

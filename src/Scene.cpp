@@ -6,6 +6,7 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include "SceneLoader.hpp"
+#include "ContentBrowser.hpp"
 
 void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
 {
@@ -42,6 +43,7 @@ void Scene::renderImgui()
     renderCompute();
     renderScene();
     renderImguiData();
+
 }
 
 void Scene::addShape(const Shape& shape)
@@ -59,14 +61,9 @@ void Scene::setSceneAndData(std::vector<Shape>& scenes, ConstantData& data)
     m_Updated = true;
 }
 
-void Scene::createTexture(unsigned int& image, int width, int height, int bindPort, bool createTexture)
+void Scene::createTexture(unsigned int& image, int width, int height, int bindPort)
 {
     glActiveTexture(GL_TEXTURE0);
-
-    if (!createTexture)
-    {
-        glDeleteTextures(1, &image);
-    }
 
     glGenTextures(1, &image);
     glBindTexture(GL_TEXTURE_2D, image);
@@ -84,11 +81,14 @@ void Scene::createTexture(unsigned int& image, int width, int height, int bindPo
 void Scene::uploadDataToCompute()
 {
     std::vector<Shape>& sceneData = m_Scene;
+	GLubyte val = 0;
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_SceneSSBO);
+	glClearBufferData(m_SceneSSBO, GL_R8UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &val);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Shape) * sceneData.size(), sceneData.data(), GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_DataSSBO);
+	glClearBufferData(m_DataSSBO, GL_R8UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &val);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ConstantData), &m_Data, GL_DYNAMIC_DRAW);
 }
 
@@ -170,8 +170,21 @@ void Scene::renderScene()
             wSize.y = correctHeight;
         }
 
+		ImGui::SetCursorPosX((ImGui::GetWindowSize().x - wSize.x) * 0.5);
+		ImGui::SetCursorPosY((ImGui::GetWindowSize().y - wSize.y) * 0.5);
+
         ImGui::Image((ImTextureID)m_OutputImage, wSize, ImVec2(0, 1), ImVec2(1, 0));
         ImGui::EndChild();
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+			{
+				const wchar_t* path = (const wchar_t*)payload->Data;
+				SceneLoader::loadFile(ContentBrowser::s_SceneDirectory / path, this);
+				ImGui::EndDragDropTarget();
+			}
+		}
 
         ImGui::End();
     }
@@ -272,8 +285,8 @@ void Scene::renderMenuBar()
 void Scene::updateTextureSizes()
 {
     glm::ivec2 currentImage = m_ImageSizes[m_CurrentImageSize];
-    createTexture(m_OutputImage, currentImage.x, currentImage.y, 0, false);
-    createTexture(m_DataImage, currentImage.x, currentImage.y, 1, false);
+    createTexture(m_OutputImage, currentImage.x, currentImage.y, 0);
+    createTexture(m_DataImage, currentImage.x, currentImage.y, 1);
 }
 
 void Scene::cleanScene()

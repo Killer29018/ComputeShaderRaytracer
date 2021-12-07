@@ -2,6 +2,8 @@
 #define SCENE_LOADED_HPP
 
 #include <vector>
+#include <filesystem>
+
 #include "Shapes.hpp"
 #include "Data.hpp"
 
@@ -19,6 +21,7 @@ private:
     static Json::Value m_Root;
 public:
     static void loadFile(const char* filePath, Scene* scene);
+    static void loadFile(std::filesystem::path path, Scene* scene);
 private:
     SceneLoader() = default;
 
