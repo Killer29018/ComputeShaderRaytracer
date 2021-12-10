@@ -4,3 +4,4 @@ bin/**
 build/**
 .vscode/**
 dlls/**
+compile_commands.json
