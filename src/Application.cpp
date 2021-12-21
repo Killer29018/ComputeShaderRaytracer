@@ -4,7 +4,6 @@ Window Application::m_Window;
 Scene Application::m_Scene;
 ContentBrowser Application::m_ContentBrowser;
 glm::vec2 Application::m_WindowSize;
-KRE::Camera Application::m_Camera({ 0.0f, 0.0f });
 
 void Application::init(glm::vec2 windowSize)
 {
@@ -12,10 +11,6 @@ void Application::init(glm::vec2 windowSize)
 
     m_Window.setScreenSize(windowSize);
     m_Window.init();
-
-    m_Camera = KRE::Camera(m_WindowSize,
-        KRE::CameraPerspective::PERSPECTIVE,
-        KRE::CameraMovementTypes::LOCKED_PERSPECTIVE);
 
     int version = gladLoadGL(glfwGetProcAddress);
     if (version == 0)
@@ -30,7 +25,7 @@ void Application::init(glm::vec2 windowSize)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    m_Scene.init(&m_Camera, m_WindowSize);
+    m_Scene.init(m_WindowSize);
 
     srand(time(0));
 
@@ -47,6 +42,7 @@ void Application::run()
     while(!glfwWindowShouldClose(m_Window.window))
     {
         KRE::Clock::tick();
+        processKeys();
 
         ImguiWindowManager::preRender();
 
@@ -80,4 +76,19 @@ void Application::GLFWResizeCallback(GLFWwindow* window, int width, int height)
     m_WindowSize = glm::vec2(width, height);
     m_Window.setScreenSize(m_WindowSize);
     m_Scene.setScreenSize(m_WindowSize);
+}
+
+void Application::processKeys()
+{
+    float dt = KRE::Clock::deltaTime;
+    if (KRE::Keyboard::getKey(GLFW_KEY_W)) m_Scene.moveCamera(KRE::CameraMovement::FORWARD, dt);
+    if (KRE::Keyboard::getKey(GLFW_KEY_S)) m_Scene.moveCamera(KRE::CameraMovement::BACK, dt);
+    if (KRE::Keyboard::getKey(GLFW_KEY_A)) m_Scene.moveCamera(KRE::CameraMovement::LEFT, dt);
+    if (KRE::Keyboard::getKey(GLFW_KEY_D)) m_Scene.moveCamera(KRE::CameraMovement::RIGHT, dt);
+    if (KRE::Keyboard::getKey(GLFW_KEY_SPACE)) m_Scene.moveCamera(KRE::CameraMovement::UP, dt);
+    if (KRE::Keyboard::getKey(GLFW_KEY_LEFT_CONTROL)) m_Scene.moveCamera(KRE::CameraMovement::DOWN, dt);
+
+
+    m_Scene.getCamera().fastMovement = KRE::Keyboard::getKey(GLFW_KEY_LEFT_SHIFT);
+
 }

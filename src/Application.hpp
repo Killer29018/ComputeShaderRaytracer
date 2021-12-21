@@ -27,6 +27,8 @@ public:
 
     static void GLFWKeyCallback(GLFWwindow* window, int key, int scanmode, int action, int mod);
     static void GLFWResizeCallback(GLFWwindow* window, int width, int height);
+
+    static void processKeys();
 private:
     Application() = default;
 };

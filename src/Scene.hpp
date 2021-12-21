@@ -29,7 +29,7 @@ class Scene : public ImguiWindow
 {
 public:
 private:
-    KRE::Camera* m_Camera;
+    KRE::Camera m_Camera;
     glm::vec2 m_WindowSize;
 
     std::vector<Shape> m_Scene;
@@ -61,11 +61,13 @@ private:
 
     float m_AverageFPS = 0.0f;
     int m_FPSCount = 0;
+
+    glm::vec3 m_CameraDirection = glm::vec3(0.0f);
 public:
-    Scene() = default;
+    Scene() : m_Camera({0.0f, 0.0f}){}
     ~Scene() = default;
 
-    void init(KRE::Camera* camera, glm::vec2& windowSize);
+    void init(glm::vec2& windowSize);
 
     void setScreenSize(glm::vec2 windowSize);
 
@@ -74,9 +76,17 @@ public:
     void addShape(const Shape& shape);
 
     void setSceneAndData(std::vector<Shape>& scene, ConstantData& data);
+
+    void moveCamera(KRE::CameraMovement movement, float dt);
+
+    KRE::Camera& getCamera() { return m_Camera; }
 private:
     void createTexture(unsigned int& image, int width, int height, int bindPort);
-    void uploadDataToCompute();
+    void uploadSSBOs();
+    void uploadDataSSBO();
+    void uploadSceneSSBO();
+
+    void updateCameraData();
 
     void setupShaders();
 

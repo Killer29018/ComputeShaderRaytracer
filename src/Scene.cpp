@@ -8,9 +8,12 @@
 #include "SceneLoader.hpp"
 #include "ContentBrowser.hpp"
 
-void Scene::init(KRE::Camera* camera, glm::vec2& windowSize)
+void Scene::init(glm::vec2& windowSize)
 {
-    m_Camera = camera;
+    m_Camera = KRE::Camera(m_WindowSize, 
+            KRE::CameraPerspective::PERSPECTIVE,
+            KRE::CameraMovementTypes::FREE_FLY);
+
     m_WindowSize = windowSize;
 
     m_ImageSizes = {
@@ -63,8 +66,21 @@ void Scene::setSceneAndData(std::vector<Shape>& scenes, ConstantData& data)
     m_Scene = scenes;
     m_Data = data;
 
+    m_Camera.position = m_Data.cameraPos;
+    m_Camera.front = glm::normalize(m_Data.cameraLookAt - m_Data.cameraPos);
+
+    m_Camera.calculateCameraVectors();
+
     cleanScene();
     m_Updated = true;
+}
+
+void Scene::moveCamera(KRE::CameraMovement movement, float dt)
+{
+    m_Camera.processKeyboard(movement, dt);
+
+    if (m_CurrentlyPlaying)
+        cleanScene();
 }
 
 void Scene::createTexture(unsigned int& image, int width, int height, int bindPort)
@@ -84,18 +100,34 @@ void Scene::createTexture(unsigned int& image, int width, int height, int bindPo
     glBindImageTexture(bindPort, image, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 }
 
-void Scene::uploadDataToCompute()
+void Scene::uploadSSBOs()
+{
+    uploadDataSSBO();
+    uploadSceneSSBO();
+}
+
+void Scene::uploadDataSSBO()
+{
+    GLubyte val = 0;
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_DataSSBO);
+    glClearBufferData(m_DataSSBO, GL_R8UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &val);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ConstantData), &m_Data, GL_DYNAMIC_DRAW);
+}
+
+void Scene::uploadSceneSSBO()
 {
     std::vector<Shape>& sceneData = m_Scene;
-	GLubyte val = 0;
+    GLubyte val = 0;
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_SceneSSBO);
-	glClearBufferData(m_SceneSSBO, GL_R8UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &val);
+    glClearBufferData(m_SceneSSBO, GL_R8UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &val);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Shape) * sceneData.size(), sceneData.data(), GL_DYNAMIC_DRAW);
+}
 
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_DataSSBO);
-	glClearBufferData(m_DataSSBO, GL_R8UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &val);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ConstantData), &m_Data, GL_DYNAMIC_DRAW);
+void Scene::updateCameraData()
+{
+    m_Data.cameraPos = m_Camera.position;
+    m_Data.cameraLookAt = m_Camera.position + m_Camera.front;
 }
 
 void Scene::setupShaders()
@@ -114,7 +146,7 @@ void Scene::resetData()
 {
     m_Data.cameraPos = glm::vec3(0.0, 0.0, 1.0);
     m_Data.cameraLookAt = glm::vec3(0.0, 0.0, 0.0);
-    m_Data.cameraUp = m_Camera->up;
+    m_Data.cameraUp = m_Camera.up;
     m_Data.background = glm::vec3(0.7, 0.8, 1.0);
     m_Data.cameraViewDist = 1.0f;
     m_Data.cameraFocusDist = 10.0;
@@ -127,8 +159,13 @@ void Scene::renderCompute()
 {
     if (m_Updated)
     {
-        uploadDataToCompute();
+        uploadSSBOs();
         m_Updated = false;
+    }
+    else
+    {
+        updateCameraData();
+        uploadDataSSBO();
     }
 
     if (!(m_SampleCount >= m_MaxSamples))
@@ -293,6 +330,26 @@ void Scene::renderImguiData()
 
         ImGui::PopItemWidth();
 
+        ImGui::End();
+    }
+
+    if (ImGui::Begin("Camera Data"))
+    {
+        constexpr float step = 0.01f;
+        constexpr float max = 100.0f;
+
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.9f);
+        ImGui::Text("Fast Movement: %i", m_Camera.fastMovement);
+
+        ImGui::Text("Camera Position");
+        if (ImGui::DragFloat3("###CameraPosition", glm::value_ptr(m_Camera.position), step, -max, max))
+            cleanScene();
+
+        ImGui::Text("Camera Front");
+        if (ImGui::DragFloat3("###CameraFront", glm::value_ptr(m_Camera.front), step, -max, max))
+            cleanScene();
+
+        ImGui::PopItemWidth();
         ImGui::End();
     }
 }

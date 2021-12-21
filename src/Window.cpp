@@ -30,7 +30,7 @@ void Window::initGLFW()
 
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    window = glfwCreateWindow(m_WindowSize.x, m_WindowSize.y, "Raytracing", NULL, NULL);
+    window = glfwCreateWindow(m_WindowSize.x, m_WindowSize.y, "Raytracing Engine", NULL, NULL);
 
     if (!window)
     {
